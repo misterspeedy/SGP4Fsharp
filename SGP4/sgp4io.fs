@@ -1,6 +1,7 @@
 ﻿module sgp4io
 
 open System
+open Sgp4Constants
 open sgp4unit
 open sgp4common
 open sscanf
@@ -16,7 +17,6 @@ let twoline2rv (longstr1 : array<char>)
                (stopmfe : double byref)
                (deltamin : double byref) 
                (satrec : ElSetRec) = 
-    let deg2rad =  PI / 180.0         //   0.0174532925199433
     let xpdotp  = 1440.0 / (2.0 * PI)  // 229.1831180523293
 
     let mutable sec           = Double.NaN

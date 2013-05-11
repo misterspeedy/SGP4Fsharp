@@ -4,6 +4,7 @@
 module testfsharp
 
 open System
+open Sgp4Constants
 open sgp4common
 open sscanf
 open sgp4unit
@@ -46,7 +47,6 @@ let runTests dataDir =
     let mutable lonper         = Double.NaN
     let mutable sec            = Double.NaN
     let mutable jd             = Double.NaN
-    let mutable rad            = Double.NaN
     let mutable tsince         = Double.NaN
     let mutable startmfe       = Double.NaN
     let mutable stopmfe        = Double.NaN
@@ -173,7 +173,6 @@ let runTests dataDir =
             mo            = Double.NaN
             no            = Double.NaN
         }
-    let rad = 180.0 / PI
 
     let monstr = [|"Jan"; "Feb"; "Mar"; "Apr"; "May"; "Jun"; "Jul"; "Aug"; "Sep"; "Oct"; "Nov"; "Dec"|]
 

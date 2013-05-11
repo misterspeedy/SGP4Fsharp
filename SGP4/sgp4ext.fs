@@ -1,6 +1,7 @@
 ﻿module sgp4ext
 
 open System
+open Sgp4Constants
 open sgp4common
 
 //// TODO move these into their own unit
@@ -113,8 +114,6 @@ let rv2coe (r : array<double>)
     let mutable typeorbit = ""
 
     // TODO centralize
-    let twopi  = 2.0 * PI
-    let halfpi = 0.5 * PI
     let small  = 0.00000001;
     let undefined = 999999.1;
     let infinite  = 999999.9;

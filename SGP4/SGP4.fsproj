@@ -45,6 +45,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="sgp4constants.fs" />
     <Compile Include="sgp4common.fs" />
     <Compile Include="sgp4unit.fs" />
     <Compile Include="sgp4ext.fs" />

@@ -1,6 +1,7 @@
 ﻿module sgp4unit
 
 open System
+open Sgp4Constants
 open sgp4common
 // From sgp4unit.h
 
@@ -55,8 +56,6 @@ let getgravconst (whichconst : GravConstType)
     ()
 
 let gstime (jdut1 : double) =
-     let twopi = 2.0 * PI
-     let deg2rad = PI / 180.0
      let mutable temp = Double.NaN
      let mutable tut1 = Double.NaN
 
@@ -92,8 +91,6 @@ let initl (satn : int)
           (sinio  : double byref)
           (gsto : double byref)
           (opsmode: char) =
-
-    let twopi = 2.0 * PI
 
     // Local variables:
     let mutable ak            = Double.NaN
@@ -211,7 +208,6 @@ let dpper (e3      : double)
           (opsmode : char) =
 
     // Constants:
-    let twopi = 2.0 * PI
     let zns = 1.19459e-5
     let zes = 0.01675
     let znl = 1.5835218e-4
@@ -344,7 +340,6 @@ let dspace
            (dndt : double byref)
            (nm : double byref) =
 
-    let twopi = 2.0 * PI
 //    int iretn  iret;
 //    double delt ft theta x2li x2omi xl xldot  xnddt xndt xomi g22 g32
 //        g44 g52 g54 fasx2 fasx4 fasx6 rptim  step2 stepn  stepp;
@@ -531,8 +526,6 @@ let sgp4 (whichconst : GravConstType)
         let mutable nodep           = Double.NaN
         let mutable tc              = Double.NaN
         let mutable dndt            = Double.NaN
-        let mutable twopi           = Double.NaN
-        let mutable x2o3            = Double.NaN
         let mutable j2              = Double.NaN
         let mutable j3              = Double.NaN
         let mutable tumin           = Double.NaN
@@ -548,7 +541,6 @@ let sgp4 (whichconst : GravConstType)
 
         // Set mathematical constants:
         let temp4 = 1.5e-12
-        let twopi = 2.0 * PI
         let x2o3  = 2.0 / 3.0;
         getgravconst whichconst &tumin &mu &radiusearthkm &xke &j2 &j3 &j4 &j3oj2 
         let vkmpersec = radiusearthkm * xke/60.0
@@ -861,7 +853,6 @@ let dscom (epoch : double)
     let zcosis  =  0.91744867
     let zcosgs  =  0.1945905
     let zsings  = -0.98088458
-    let twopi   =  2.0 * PI
 
     let mutable a1     = Double.NaN
     let mutable a2     = Double.NaN
@@ -1129,7 +1120,6 @@ let dsinit (whichconst : GravConstType)
            (xni : double byref) =
 
      // Local variables:
-    let twopi = 2.0 * PI
     let mutable aonv = 0.0
 
     let mutable f220 = Double.NaN
