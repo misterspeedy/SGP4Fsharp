@@ -26,8 +26,8 @@ Project Stages
 1) A naive, line-by-line port of the C++ code, warts and all.  
 
 The first version of this repo represents this step.  The results produced by running
-this version (entering the parameters 'a', 'v' and '72') are the same as those produced
-by the C++ version, except for some rounding differences in the last digit.
+this version are the same as those produced by the C++ version  (entering the parameters 
+'a', 'v' and '72'), except for some rounding differences in the last digit.
 
 This version also includes a project (SGP4RegressionTest) which generates a new set of 
 output and compares it with the output produced by the first version.  This means that
