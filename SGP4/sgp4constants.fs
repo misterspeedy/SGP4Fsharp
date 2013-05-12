@@ -29,8 +29,9 @@ type GravConstType =
 
 // Orbit types:
 
-//type OrbitType =
-//    | EllipticalInclined
-//    | CircularEquatorial
-//    | CircularInclined
-//    | EllipticalParabolicHyperbolicEquatorial
+type OrbitType =
+    | Undefined // TODO remove this when code is fully functional
+    | EllipticalInclined
+    | CircularEquatorial
+    | CircularInclined
+    | EllipticalParabolicHyperbolicEquatorial

@@ -87,7 +87,7 @@ let rv2coe (r : array<double>)
     let mutable magh     = Double.NaN
     let mutable e        = Double.NaN
 
-    let mutable typeorbit = ""
+    let mutable typeorbit = OrbitType.Undefined
 
     magr <- mag r
     magv <- mag v
@@ -120,18 +120,18 @@ let rv2coe (r : array<double>)
 
         // Determine type of orbit for later use:
         //   elliptical, parabolic, hyperbolic inclined
-        typeorbit <- "ei"
+        typeorbit <- OrbitType.EllipticalInclined
         if ( ecc < small ) then
             // Circular equatorial:
             if  ((incl<small) || (Math.Abs(incl-PI)<small)) then
-                typeorbit <- "ce"
+                typeorbit <- OrbitType.CircularEquatorial
             else
                 // Circular inclined:
-                typeorbit <- "ci"
+                typeorbit <- OrbitType.CircularInclined
         else
             // Elliptical, parabolic, hyperbolic equatorial:
             if  ((incl<small) || (Math.Abs(incl-PI)<small)) then
-                typeorbit <- "ee"
+                typeorbit <- OrbitType.EllipticalParabolicHyperbolicEquatorial
 
         // Find longitude of ascending node:
         if ( magn > small ) then
@@ -145,7 +145,7 @@ let rv2coe (r : array<double>)
             omega <- undefined
 
         // Find argument of perigee:
-        if ( typeorbit = "ei" ) then
+        if ( typeorbit = OrbitType.EllipticalInclined ) then
             argp <- angle nbar ebar
             if ( ebar.[2] < 0.0  ) then
                 argp <- twopi - argp
@@ -153,7 +153,7 @@ let rv2coe (r : array<double>)
             argp <- undefined
 
         // Find true anomaly at epoch:
-        if ( typeorbit.[0] = 'e' ) then
+        if ( typeorbit = OrbitType.EllipticalInclined || typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial ) then
             nu <- angle ebar r
             if (rdotv < 0.0) then
                 nu <- twopi - nu
@@ -161,7 +161,7 @@ let rv2coe (r : array<double>)
             nu <- undefined
 
         // Find argument of latitude - circular inclined:
-        if ( typeorbit = "ci" ) then
+        if ( typeorbit = OrbitType.CircularInclined ) then
             arglat <- angle nbar r
             if ( r.[2] < 0.0  ) then
                 arglat <- twopi - arglat
@@ -170,7 +170,7 @@ let rv2coe (r : array<double>)
             arglat <- undefined
 
         // Find longitude of perigee - elliptical equatorial:
-        if  (( ecc>small ) && ( typeorbit = "ee")) then
+        if  (( ecc>small ) && ( typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial)) then
             temp <- ebar.[0]/ecc
             if ( Math.Abs(temp) > 1.0  ) then
                 temp <- sgn(temp)
@@ -183,7 +183,7 @@ let rv2coe (r : array<double>)
             lonper <- undefined
 
         // Find true longitude - circular equatorial:
-        if  (( magr>small ) && ( typeorbit = "ce")) then
+        if  (( magr>small ) && ( typeorbit = OrbitType.CircularEquatorial)) then
             temp <- r.[0]/magr
             if ( Math.Abs(temp) > 1.0  ) then
                 temp <- sgn(temp)
@@ -197,7 +197,7 @@ let rv2coe (r : array<double>)
             truelon <- undefined
 
         // Find mean anomaly for all orbits:
-        if ( typeorbit.[0] = 'e' ) then
+        if ( typeorbit = OrbitType.EllipticalInclined || typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial ) then
             newtonnu ecc nu &e &m
     else
         p       <- undefined
