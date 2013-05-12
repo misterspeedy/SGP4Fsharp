@@ -48,14 +48,6 @@ let runTests dataDir =
     let mutable startmfe       = Double.NaN
     let mutable stopmfe        = Double.NaN
     let mutable deltamin       = Double.NaN
-    let mutable tumin          = Double.NaN
-    let mutable mu             = Double.NaN
-    let mutable radiusearthkm  = Double.NaN
-    let mutable xke            = Double.NaN
-    let mutable j2             = Double.NaN
-    let mutable j3             = Double.NaN
-    let mutable j4             = Double.NaN
-    let mutable j3oj2          = Double.NaN
 
     let mutable year = Int32.MinValue
     let mutable mon  = Int32.MinValue
@@ -197,7 +189,7 @@ let runTests dataDir =
 
     whichconst <- Wgs72
 
-    getgravconst whichconst &tumin &mu &radiusearthkm &xke &j2 &j3 &j4 &j3oj2
+    let gravConsts = getgravconst whichconst 
 
 //    printfn "input elset filename:"
 //    let infilename = Console.ReadLine()
@@ -283,7 +275,7 @@ let runTests dataDir =
                     let outLinePart1 = sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f" 
                                                tsince ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2]
 
-                    rv2coe ro vo mu &p &a &ecc &incl &node &argp &nu &m &arglat &truelon &lonper
+                    rv2coe ro vo gravConsts.mu &p &a &ecc &incl &node &argp &nu &m &arglat &truelon &lonper
 
                     let outLinePart2 = sprintf " %14.6f %8.6f %10.5f %10.5f %10.5f %10.5f %10.5f %5i%3i%3i %2i:%2i:%9.6f"
                                                 a ecc (incl*rad) (node*rad) (argp*rad) (nu*rad) (m*rad) year mon day hr min sec

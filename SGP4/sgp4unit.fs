@@ -9,42 +9,83 @@ open sgp4common
 
 // C++ math functions 
 
-let getgravconst (whichconst : GravConstType) 
-                 (tumin : double byref)
-                 (mu : double byref)
-                 (radiusearthkm : double byref)
-                 (xke : double byref)
-                 (j2 : double byref)
-                 (j3 : double byref)
-                 (j4 : double byref)
-                 (j3oj2 : double byref) = 
+type GravityConstants = 
+    {
+        tumin : double 
+        mu : double 
+        radiusearthkm : double 
+        xke : double 
+        j2 : double 
+        j3 : double 
+        j4 : double 
+        j3oj2 : double  
+    }
+
+let getgravconst (whichconst : GravConstType) =
+
+    // TODO eliminate repetition below
     match whichconst with
     // -- wgs-72 low precision str#3 constants --
     | Wgs72old -> 
-        mu     <-   398600.79964   // in km3 / s2
-        radiusearthkm <- 6378.135  // km
-        xke    <-   0.0743669161
-        j2     <-   0.001082616
-        j3     <-  -0.00000253881
-        j4     <-  -0.00000165597
+        let mu     =   398600.79964   // in km3 / s2
+        let radiusearthkm = 6378.135  // km
+        let xke    =   0.0743669161
+        let j2     =   0.001082616
+        let j3     =  -0.00000253881
+        let j4     =  -0.00000165597
+        let tumin  = 1.0 / xke
+        let j3oj2  = j3 / j2        
+        {
+            mu     =   mu
+            radiusearthkm = radiusearthkm
+            xke    = xke
+            j2     = j2
+            j3     = j3
+            j4     = j4
+            tumin  = tumin
+            j3oj2  = j3oj2
+        }
     // ------------ wgs-72 constants ------------
     | Wgs72 -> 
-        mu     <-   398600.8       // in km3 / s2
-        radiusearthkm <- 6378.135  // km
-        xke    <-   60.0 / sqrt(radiusearthkm**3.0/mu)
-        j2     <-   0.001082616
-        j3     <-  -0.00000253881
-        j4     <-  -0.00000165597
+        let mu     =   398600.8       // in km3 / s2
+        let radiusearthkm = 6378.135  // km
+        let xke    =   60.0 / sqrt(radiusearthkm**3.0/mu)
+        let j2     =   0.001082616
+        let j3     =  -0.00000253881
+        let j4     =  -0.00000165597
+        let tumin  = 1.0 / xke
+        let j3oj2  = j3 / j2
+        {
+            mu     =   mu
+            radiusearthkm = radiusearthkm
+            xke    = xke
+            j2     = j2
+            j3     = j3
+            j4     = j4
+            tumin  = tumin
+            j3oj2  = j3oj2
+        }    
     // ------------ wgs-84 constants ------------
     | Wgs84 -> 
-        mu     <-   398600.5       // in km3 / s2
-        radiusearthkm <- 6378.137  // km
-        xke    <-   60.0 / sqrt(radiusearthkm**3.0/mu)
-        j2     <-   0.00108262998905
-        j3     <-  -0.00000253215306
-        j4     <-  -0.00000161098761
-    tumin <- 1.0 / xke
-    j3oj2 <- j3 / j2
+        let mu     =   398600.5       // in km3 / s2
+        let radiusearthkm = 6378.137  // km
+        let xke    =   60.0 / sqrt(radiusearthkm**3.0/mu)
+        let j2     =   0.00108262998905
+        let j3     =  -0.00000253215306
+        let j4     =  -0.00000161098761
+        let tumin  = 1.0 / xke
+        let j3oj2  = j3 / j2
+        {
+            mu     =   mu
+            radiusearthkm = radiusearthkm
+            xke    = xke
+            j2     = j2
+            j3     = j3
+            j4     = j4
+            tumin  = tumin
+            j3oj2  = j3oj2
+        }
+
 
 let fixQuadrant x = 
     if x < 0.0 then
@@ -88,14 +129,6 @@ let initl (satn : int)
     let mutable adel          = Double.NaN
     let mutable po            = Double.NaN
     let mutable x2o3          = Double.NaN
-    let mutable j2            = Double.NaN
-    let mutable xke           = Double.NaN
-    let mutable tumin         = Double.NaN
-    let mutable mu            = Double.NaN
-    let mutable radiusearthkm = Double.NaN
-    let mutable j3            = Double.NaN
-    let mutable j4            = Double.NaN
-    let mutable j3oj2         = Double.NaN
      
     let mutable ds70          = Double.NaN
     let mutable ts70          = Double.NaN
@@ -106,7 +139,7 @@ let initl (satn : int)
     let mutable c1p2p         = Double.NaN
 
     // Earth constants:
-    getgravconst whichconst &tumin &mu &radiusearthkm &xke &j2 &j3 &j4 &j3oj2
+    let gravConsts = getgravconst whichconst
     x2o3 <- 2.0 / 3.0
 
     // Calculate auxillary epoch quantities:
@@ -117,15 +150,15 @@ let initl (satn : int)
     cosio2 <- cosio * cosio
 
     // Un-kozai the mean motion:
-    ak    <- Math.Pow(xke / no, x2o3)
-    d1    <- 0.75 * j2 * (3.0 * cosio2 - 1.0) / (rteosq * omeosq)
+    ak    <- Math.Pow(gravConsts.xke / no, x2o3)
+    d1    <- 0.75 * gravConsts.j2 * (3.0 * cosio2 - 1.0) / (rteosq * omeosq)
     del   <- d1 / (ak * ak)
     adel  <- ak * (1.0 - del * del - del *
                    (1.0 / 3.0 + 134.0 * del * del / 81.0))
     del   <- d1/(adel * adel)
     no    <- no / (1.0 + del)
           
-    ao    <- Math.Pow(xke / no, x2o3)
+    ao    <- Math.Pow(gravConsts.xke / no, x2o3)
     sinio <- sin(inclo)
     po    <- ao * omeosq
     con42 <- 1.0 - 5.0 * cosio2
@@ -505,14 +538,6 @@ let sgp4 (whichconst : GravConstType)
         let mutable nodep           = Double.NaN
         let mutable tc              = Double.NaN
         let mutable dndt            = Double.NaN
-        let mutable j2              = Double.NaN
-        let mutable j3              = Double.NaN
-        let mutable tumin           = Double.NaN
-        let mutable j4              = Double.NaN
-        let mutable xke             = Double.NaN
-        let mutable j3oj2           = Double.NaN
-        let mutable radiusearthkm   = Double.NaN
-        let mutable mu              = Double.NaN
         let mutable delmtemp        = Double.NaN
 
         let mutable mrt = 0.0 
@@ -521,8 +546,9 @@ let sgp4 (whichconst : GravConstType)
         // Set mathematical constants:
         let temp4 = 1.5e-12
         let x2o3  = 2.0 / 3.0;
-        getgravconst whichconst &tumin &mu &radiusearthkm &xke &j2 &j3 &j4 &j3oj2 
-        let vkmpersec = radiusearthkm * xke/60.0
+        let gravConsts = getgravconst whichconst 
+        //&tumin &mu &radiusearthkm &xke &j2 &j3 &j4 &j3oj2 
+        let vkmpersec = gravConsts.radiusearthkm * gravConsts.xke/60.0
 
         // Clear sgp4 error flag:
         satrec.t     <- tsince
@@ -577,8 +603,8 @@ let sgp4 (whichconst : GravConstType)
             satrec.error <- 2s
             raise (Exception("Error 2 in sgp4"))
         else
-            am <- Math.Pow((xke / nm),x2o3) * tempa * tempa
-            nm <- xke / Math.Pow(am, 1.5)
+            am <- Math.Pow((gravConsts.xke / nm),x2o3) * tempa * tempa
+            nm <- gravConsts.xke / Math.Pow(am, 1.5)
             em <- em - tempe
 
             // fix tolerance for error recognition
@@ -637,11 +663,11 @@ let sgp4 (whichconst : GravConstType)
                 if (satrec.method' = 'd') then
                     sinip <-  sin(xincp)
                     cosip <-  cos(xincp)
-                    satrec.aycof <- -0.5*j3oj2*sinip
+                    satrec.aycof <- -0.5*gravConsts.j3oj2*sinip
                     if (Math.Abs(cosip+1.0) > 1.5e-12) then
-                        satrec.xlcof <- -0.25 * j3oj2 * sinip * (3.0 + 5.0 * cosip) / (1.0 + cosip)
+                        satrec.xlcof <- -0.25 * gravConsts.j3oj2 * sinip * (3.0 + 5.0 * cosip) / (1.0 + cosip)
                     else
-                        satrec.xlcof <- -0.25 * j3oj2 * sinip * (3.0 + 5.0 * cosip) / temp4
+                        satrec.xlcof <- -0.25 * gravConsts.j3oj2 * sinip * (3.0 + 5.0 * cosip) / temp4
 
                 axnl <- ep * cos(argpp)
                 temp <- 1.0 / (am * (1.0 - ep * ep))
@@ -683,7 +709,7 @@ let sgp4 (whichconst : GravConstType)
                     sin2u  <- (cosu + cosu) * sinu
                     cos2u  <- 1.0 - 2.0 * sinu * sinu
                     temp   <- 1.0 / pl
-                    temp1  <- 0.5 * j2 * temp
+                    temp1  <- 0.5 * gravConsts.j2 * temp
                     temp2  <- temp1 * temp
 
                     // Update for short period periodics:
@@ -698,9 +724,9 @@ let sgp4 (whichconst : GravConstType)
                     su    <- su - 0.25 * temp2 * satrec.x7thm1 * sin2u
                     xnode <- nodep + 1.5 * temp2 * cosip * sin2u
                     xinc  <- xincp + 1.5 * temp2 * cosip * sinip * cos2u
-                    mvt   <- rdotl - nm * temp1 * satrec.x1mth2 * sin2u / xke
+                    mvt   <- rdotl - nm * temp1 * satrec.x1mth2 * sin2u / gravConsts.xke
                     rvdot <- rvdotl + nm * temp1 * (satrec.x1mth2 * cos2u +
-                             1.5 * satrec.con41) / xke
+                             1.5 * satrec.con41) / gravConsts.xke
 
                     // Orientation vectors:
                     sinsu <- sin(su)
@@ -719,9 +745,9 @@ let sgp4 (whichconst : GravConstType)
                     vz    <- sini * cossu
 
                     // Position and velocity (in km and km/sec):
-                    r.[0] <- (mrt * ux)* radiusearthkm
-                    r.[1] <- (mrt * uy)* radiusearthkm
-                    r.[2] <- (mrt * uz)* radiusearthkm
+                    r.[0] <- (mrt * ux)* gravConsts.radiusearthkm
+                    r.[1] <- (mrt * uy)* gravConsts.radiusearthkm
+                    r.[2] <- (mrt * uz)* gravConsts.radiusearthkm
                     v.[0] <- (mvt * ux + rvdot * vx) * vkmpersec
                     v.[1] <- (mvt * uy + rvdot * vy) * vkmpersec
                     v.[2] <- (mvt * uz + rvdot * vz) * vkmpersec
@@ -1140,17 +1166,8 @@ let dsinit (whichconst : GravConstType)
     let znl    = 1.5835218e-4
     let zns    = 1.19459e-5
 
-    let mutable xke            = Double.NaN
-    let mutable tumin          = Double.NaN
-    let mutable mu             = Double.NaN
-    let mutable radiusearthkm  = Double.NaN
-    let mutable j2             = Double.NaN
-    let mutable j3             = Double.NaN
-    let mutable j4             = Double.NaN
-    let mutable j3oj2          = Double.NaN
-
     // sgp4fix identify constants and allow alternate values
-    getgravconst whichconst &tumin &mu &radiusearthkm &xke &j2 &j3 &j4 &j3oj2
+    let gravConsts = getgravconst whichconst
 
     // Deep space initialization:
     irez <- 0s
@@ -1198,7 +1215,7 @@ let dsinit (whichconst : GravConstType)
 
     // Initialize the resonance terms:
     if (irez <> 0s) then
-        aonv <- Math.Pow(nm / xke, x2o3)
+        aonv <- Math.Pow(nm / gravConsts.xke, x2o3)
 
         // TODO I think that some of these are uninitialized in the C++ code - a bug?
         let mutable cosisq = Double.NaN
@@ -1406,17 +1423,9 @@ let sgp4init (whichconst : GravConstType)
     let mutable z33           = Double.NaN    
     let mutable qzms2t        = Double.NaN
     let mutable ss            = Double.NaN
-    let mutable j2            = Double.NaN
-    let mutable j3oj2         = Double.NaN
-    let mutable j4            = Double.NaN
     let mutable x2o3          = Double.NaN
     let r                     = [|Double.NaN; Double.NaN; Double.NaN|]
     let v                     = [|Double.NaN; Double.NaN; Double.NaN|]
-    let mutable tumin         = Double.NaN
-    let mutable mu            = Double.NaN
-    let mutable radiusearthkm = Double.NaN
-    let mutable xke           = Double.NaN
-    let mutable j3            = Double.NaN
     let mutable delmotemp     = Double.NaN
     let mutable qzms2ttemp    = Double.NaN
     let mutable qzms24temp    = Double.NaN
@@ -1466,10 +1475,10 @@ let sgp4init (whichconst : GravConstType)
     satrec.operationmode <- opsmode
 
     // Earth constants:
-    getgravconst whichconst &tumin &mu &radiusearthkm &xke &j2 &j3 &j4 &j3oj2 
-    ss <- 78.0 / radiusearthkm + 1.0
+    let gravConsts = getgravconst whichconst
+    ss <- 78.0 / gravConsts.radiusearthkm + 1.0
     // sgp4fix use multiply for speed instead of pow
-    qzms2ttemp <- (120.0 - 78.0) / radiusearthkm
+    qzms2ttemp <- (120.0 - 78.0) / gravConsts.radiusearthkm
     qzms2t <- qzms2ttemp * qzms2ttemp * qzms2ttemp * qzms2ttemp
     x2o3 <- 2.0 / 3.0
 
@@ -1485,11 +1494,11 @@ let sgp4init (whichconst : GravConstType)
 
     if ((omeosq >= 0.0 ) || ( satrec.no >= 0.0)) then
         satrec.isimp <- 0s
-        if (rp < (220.0 / radiusearthkm + 1.0)) then
+        if (rp < (220.0 / gravConsts.radiusearthkm + 1.0)) then
             satrec.isimp <- 1s
         sfour  <- ss
         qzms24 <- qzms2t
-        perige <- (rp - 1.0) * radiusearthkm
+        perige <- (rp - 1.0) * gravConsts.radiusearthkm
 
         // For perigees below 156 km, s and qoms2t are altered:
         if (perige < 156.0) then
@@ -1497,9 +1506,9 @@ let sgp4init (whichconst : GravConstType)
             if (perige < 98.0) then
                 sfour <- 20.0
             // sgp4fix use multiply for speed instead of pow
-            qzms24temp <-  (120.0 - sfour) / radiusearthkm
+            qzms24temp <-  (120.0 - sfour) / gravConsts.radiusearthkm
             qzms24 <- qzms24temp * qzms24temp * qzms24temp * qzms24temp
-            sfour  <- sfour / radiusearthkm + 1.0
+            sfour  <- sfour / gravConsts.radiusearthkm + 1.0
         pinvsq <- 1.0 / posq
 
         tsi  <- 1.0 / (ao - sfour)
@@ -1510,17 +1519,17 @@ let sgp4init (whichconst : GravConstType)
         coef  <- qzms24 * Math.Pow(tsi, 4.0)
         coef1 <- coef / Math.Pow(psisq, 3.5)
         cc2   <- coef1 * satrec.no * (ao * (1.0 + 1.5 * etasq + eeta *
-                                                                      (4.0 + etasq)) + 0.375 * j2 * tsi / psisq * satrec.con41 *
+                                                                      (4.0 + etasq)) + 0.375 * gravConsts.j2 * tsi / psisq * satrec.con41 *
                                                                       (8.0 + 3.0 * etasq * (8.0 + etasq)))
         satrec.cc1   <- satrec.bstar * cc2
         cc3   <- 0.0;
         if (satrec.ecco > 1.0e-4) then
-            cc3 <- -2.0 * coef * tsi * j3oj2 * satrec.no * sinio / satrec.ecco
+            cc3 <- -2.0 * coef * tsi * gravConsts.j3oj2 * satrec.no * sinio / satrec.ecco
         satrec.x1mth2 <- 1.0 - cosio2
         satrec.cc4    <- 2.0* satrec.no * coef1 * ao * omeosq *
                             (
                                 satrec.eta * (2.0 + 0.5 * etasq) + satrec.ecco *
-                                    (0.5 + 2.0 * etasq) - j2 * tsi / (ao * psisq) *
+                                    (0.5 + 2.0 * etasq) - gravConsts.j2 * tsi / (ao * psisq) *
                                     (-3.0 * satrec.con41 * (1.0 - 2.0 * eeta + etasq *
                                         (1.5 - 0.5 * eeta)) + 0.75 * satrec.x1mth2 *
                                         (2.0 * etasq - eeta * (1.0 + etasq)) * cos(2.0 * satrec.argpo))
@@ -1528,9 +1537,9 @@ let sgp4init (whichconst : GravConstType)
         satrec.cc5 <- 2.0 * coef1 * ao * omeosq * (1.0 + 2.75 *
                     (etasq + eeta) + eeta * etasq)
         cosio4 <- cosio2 * cosio2
-        temp1  <- 1.5 * j2 * pinvsq * satrec.no
-        temp2  <- 0.5 * temp1 * j2 * pinvsq
-        temp3  <- -0.46875 * j4 * pinvsq * pinvsq * satrec.no
+        temp1  <- 1.5 * gravConsts.j2 * pinvsq * satrec.no
+        temp2  <- 0.5 * temp1 * gravConsts.j2 * pinvsq
+        temp3  <- -0.46875 * gravConsts.j4 * pinvsq * pinvsq * satrec.no
         satrec.mdot     <- satrec.no + 0.5 * temp1 * rteosq * satrec.con41 + 0.0625 *
                         temp2 * rteosq * (13.0 - 78.0 * cosio2 + 137.0 * cosio4)
         satrec.argpdot  <- -0.5 * temp1 * con42 + 0.0625 * temp2 *
@@ -1548,10 +1557,10 @@ let sgp4init (whichconst : GravConstType)
         satrec.t2cof   <- 1.5 * satrec.cc1
         // sgp4fix for divide by zero with xinco <- 180 deg
         if (Math.Abs(cosio+1.0) > 1.5e-12) then
-            satrec.xlcof <- -0.25 * j3oj2 * sinio * (3.0 + 5.0 * cosio) / (1.0 + cosio)
+            satrec.xlcof <- -0.25 * gravConsts.j3oj2 * sinio * (3.0 + 5.0 * cosio) / (1.0 + cosio)
         else
-            satrec.xlcof <- -0.25 * j3oj2 * sinio * (3.0 + 5.0 * cosio) / temp4
-        satrec.aycof   <- -0.5 * j3oj2 * sinio
+            satrec.xlcof <- -0.25 * gravConsts.j3oj2 * sinio * (3.0 + 5.0 * cosio) / temp4
+        satrec.aycof   <- -0.5 * gravConsts.j3oj2 * sinio
         // sgp4fix use multiply for speed instead of pow
         delmotemp <- 1.0 + satrec.eta * cos(satrec.mo)
         satrec.delmo   <- delmotemp * delmotemp * delmotemp

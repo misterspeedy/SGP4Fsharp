@@ -20,14 +20,6 @@ let twoline2rv (longstr1 : array<char>)
     let xpdotp  = 1440.0 / (2.0 * PI)  // 229.1831180523293
 
     let mutable sec           = Double.NaN
-    let mutable mu            = Double.NaN
-    let mutable radiusearthkm = Double.NaN
-    let mutable tumin         = Double.NaN
-    let mutable xke           = Double.NaN
-    let mutable j2            = Double.NaN
-    let mutable j3            = Double.NaN
-    let mutable j4            = Double.NaN
-    let mutable j3oj2         = Double.NaN
     let mutable startsec      = Double.NaN
     let mutable stopsec       = Double.NaN
     let mutable startdayofyr  = Double.NaN
@@ -64,7 +56,9 @@ let twoline2rv (longstr1 : array<char>)
     let mutable nexp   = Int32.MinValue
     let mutable ibexp  = Int32.MinValue
 
-    getgravconst whichconst &tumin &mu &radiusearthkm &xke &j2 &j3 &j4 &j3oj2
+    let gravConsts = getgravconst whichconst 
+    
+    //&tumin &mu &radiusearthkm &xke &j2 &j3 &j4 &j3oj2
 
     satrec.error <- 0s
 
@@ -178,7 +172,7 @@ let twoline2rv (longstr1 : array<char>)
     satrec.bstar <- satrec.bstar * Math.Pow(10.0, float(ibexp))
 
     // Convert to sgp4 units:
-    satrec.a     <- Math.Pow( satrec.no*tumin , (-2.0/3.0) )
+    satrec.a     <- Math.Pow( satrec.no*gravConsts.tumin , (-2.0/3.0) )
     satrec.ndot  <- satrec.ndot  / (xpdotp*1440.0)  //* ? * minperday
     satrec.nddot <- satrec.nddot / (xpdotp*1440.0*1440.0)
 
