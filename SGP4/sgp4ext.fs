@@ -2,32 +2,10 @@
 
 open System
 open Sgp4Constants
+open Sgp4Math
 open sgp4common
 
-//// TODO move these into their own unit
-let fmod (numerator : double) (denominator : double) = 
-    let quotient = numerator / denominator |> int |> double
-    numerator - (denominator * quotient)
-
-let sgn x =
-    if (x < 0.) then -1.0 else 1.0
-
-let mag (x : array<double>) =
-    x.[0]*x.[0] + x.[1]*x.[1] + x.[2]*x.[2] |> sqrt
-
-let cross (vec1 : array<double>) (vec2 : array<double>) (outvec : array<double>) =
-    // TODO check array lengths or find a better way
-    outvec.[0] <- vec1.[1]*vec2.[2] - vec1.[2]*vec2.[1]
-    outvec.[1] <- vec1.[2]*vec2.[0] - vec1.[0]*vec2.[2]
-    outvec.[2] <- vec1.[0]*vec2.[1] - vec1.[1]*vec2.[0]
-
-let dot (x : array<double>) (y : array<double>) =
-    x.[0]*y.[0] + x.[1]*y.[1] + x.[2]*y.[2]
-
 let angle (vec1 : array<double>) (vec2 : array<double>) =
-    let small = 0.00000001
-    let undefined = 999999.1
-
     let magv1 = mag vec1
     let magv2 = mag vec2
 
@@ -43,7 +21,6 @@ let asinh xval =
     log (xval + sqrt(xval * xval + 1.0))
 
 let newtonnu (ecc : double) (nu : double) (e0 : double byref) (m : double byref) =
-    let small = 0.00000001
     let mutable sine = Double.NaN
     let mutable cose = Double.NaN
 
@@ -96,7 +73,6 @@ let rv2coe (r : array<double>)
            (truelon : double byref)
            (lonper : double byref) =
 
-    let hbar             = [|Double.NaN; Double.NaN; Double.NaN|]
     let nbar             = [|Double.NaN; Double.NaN; Double.NaN|]
     let mutable magr     = Double.NaN
     let mutable magv     = Double.NaN
@@ -113,16 +89,11 @@ let rv2coe (r : array<double>)
 
     let mutable typeorbit = ""
 
-    // TODO centralize
-    let small  = 0.00000001;
-    let undefined = 999999.1;
-    let infinite  = 999999.9;
-
     magr <- mag r
     magv <- mag v
 
     // Find h n and e vectors:
-    cross r v  hbar
+    let hbar = cross r v
     magh <- mag hbar
     if ( magh > small ) then
         nbar.[0] <- -hbar.[1]

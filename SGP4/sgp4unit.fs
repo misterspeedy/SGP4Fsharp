@@ -2,15 +2,12 @@
 
 open System
 open Sgp4Constants
+open Sgp4Math
 open sgp4common
+
 // From sgp4unit.h
 
 // C++ math functions 
-
-//// TODO move these into their own unit
-let fmod (numerator : double) (denominator : double) = 
-    let quotient = numerator / denominator |> int |> double
-    numerator - (denominator * quotient)
 
 let getgravconst (whichconst : GravConstType) 
                  (tumin : double byref)

@@ -16,9 +16,9 @@ let deg2rad = PI / 180.0
 
 // Magic numbers:
 
-//let small  = 0.00000001
-//let undefined = 999999.1
-//let infinite  = 999999.9
+let small  = 0.00000001
+let undefined = 999999.1
+let infinite  = 999999.9
 
 // Gravity:
 
