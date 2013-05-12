@@ -19,7 +19,6 @@ let sgn x =
 /// Returns the magnitude of a vector in 3D space, using
 /// Pythagorus' Law.
 let mag (x : double[]) =
-    //x.[0]*x.[0] + x.[1]*x.[1] + x.[2]*x.[2] |> sqrt
     x.[0] ** 2. + x.[1] ** 2. + x.[2] ** 2. |> sqrt
 
 /// Returns the cross-product of two vectors.

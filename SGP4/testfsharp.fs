@@ -1,7 +1,4 @@
-﻿// STATUS - many tiny rounding differences
-// Serious differences in 09998.e
-
-module testfsharp
+﻿module testfsharp
 
 open System
 open Sgp4Constants
@@ -304,6 +301,3 @@ let runTests dataDir =
         System.IO.File.WriteAllLines(IO.Path.Combine(dataDir, "tfsharpver.out"), outFileLines)
     else
         System.IO.File.WriteAllLines(IO.Path.Combine(dataDir, "tsharp.out"), outFileLines)
-
-    ()
-

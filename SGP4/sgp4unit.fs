@@ -50,7 +50,6 @@ let getgravconst (whichconst : GravConstType)
         j4     <-  -0.00000161098761
         j3oj2  <-  j3 / j2
     //| _ -> failwithf "unknown gravity option (%A)"  whichconst
-    ()
 
 let gstime (jdut1 : double) =
      let mutable temp = Double.NaN
@@ -158,8 +157,6 @@ let initl (satn : int)
             gsto <- gsto + twopi
     else
         gsto <- gstime(epoch + 2433281.5)
-
-    ()
 
 // Function declarations:
 
@@ -296,7 +293,6 @@ let dpper (e3      : double)
                  nodep <- nodep - twopi
            mp <- mp + pl
            argpp <- xls - mp - cosip * nodep
-    ()
 
 let dspace
            (irez : int)
@@ -439,8 +435,6 @@ let dspace
             mm   <- xl - nodem - argpm + theta
             dndt <- nm - no
         nm <- no + dndt
-
-    ()
 
 let sgp4 (whichconst : GravConstType)
          (satrec : ElSetRec)
@@ -1040,8 +1034,6 @@ let dscom (epoch : double)
     xh2  <-  -2.0 * s2 * z22
     xh3  <-  -2.0 * s2 * (z23 - z21)
 
-    ()
-
 let dsinit (whichconst : GravConstType)
            (cosim : double)
            (emsq : double)
@@ -1324,7 +1316,6 @@ let dsinit (whichconst : GravConstType)
         xni   <- no
         atime <- 0.0
         nm    <- no + dndt
-    ()
 
 let sgp4init (whichconst : GravConstType)
              (opsmode : char)

@@ -56,8 +56,6 @@ let newtonnu (ecc : double) (nu : double) (e0 : double byref) (m : double byref)
             m <- m + 2.0 * PI
         e0 <- fmod e0 (2.0 * PI)
 
-    ()
-
 let rv2coe (r : array<double>)
            (v : array<double>)
            (mu : double)
@@ -211,7 +209,6 @@ let rv2coe (r : array<double>)
         arglat  <- undefined
         truelon <- undefined
         lonper  <- undefined
-    ()
 
 let jday (year : int)
          (mon : int)
@@ -265,8 +262,6 @@ let days2mdhms (year : int)
     minute <- int(floor(temp))
     sec    <- (temp - float(minute)) * 60.0
 
-    ()
-
 let invjday (jd : double)
             (year : int byref)
             (mon : int byref)
@@ -293,4 +288,3 @@ let invjday (jd : double)
     // Find remaining data:
     days2mdhms year days &mon &day &hr &minute &sec
     sec <- sec - 0.00000086400
-    ()
