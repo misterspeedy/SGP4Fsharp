@@ -21,45 +21,43 @@ let getgravconst (whichconst : GravConstType)
     match whichconst with
     // -- wgs-72 low precision str#3 constants --
     | Wgs72old -> 
-        mu     <- 398600.79964        // in km3 / s2
-        radiusearthkm <- 6378.135     // km
-        xke    <- 0.0743669161
+        mu     <-   398600.79964   // in km3 / s2
+        radiusearthkm <- 6378.135  // km
+        xke    <-   0.0743669161
         j2     <-   0.001082616
         j3     <-  -0.00000253881
         j4     <-  -0.00000165597
     // ------------ wgs-72 constants ------------
     | Wgs72 -> 
-        mu     <- 398600.8            // in km3 / s2
-        radiusearthkm <- 6378.135     // km
-        xke    <- 60.0 / sqrt(radiusearthkm*radiusearthkm*radiusearthkm/mu)
+        mu     <-   398600.8       // in km3 / s2
+        radiusearthkm <- 6378.135  // km
+        xke    <-   60.0 / sqrt(radiusearthkm**3.0/mu)
         j2     <-   0.001082616
         j3     <-  -0.00000253881
         j4     <-  -0.00000165597
     // ------------ wgs-84 constants ------------
     | Wgs84 -> 
-        mu     <- 398600.5            // in km3 / s2
-        radiusearthkm <- 6378.137     // km
-        xke    <- 60.0 / sqrt(radiusearthkm*radiusearthkm*radiusearthkm/mu)
+        mu     <-   398600.5       // in km3 / s2
+        radiusearthkm <- 6378.137  // km
+        xke    <-   60.0 / sqrt(radiusearthkm**3.0/mu)
         j2     <-   0.00108262998905
         j3     <-  -0.00000253215306
         j4     <-  -0.00000161098761
     tumin <- 1.0 / xke
     j3oj2 <- j3 / j2
 
+let fixQuadrant x = 
+    if x < 0.0 then
+        x + twopi
+    else
+        x
+
 let gstime (jdut1 : double) =
-     let mutable temp = Double.NaN
-     let mutable tut1 = Double.NaN
+    let tut1 = (jdut1 - 2451545.0) / 36525.0
 
-     tut1 <- (jdut1 - 2451545.0) / 36525.0
-     temp <- -6.2e-6* tut1 * tut1 * tut1 + 0.093104 * tut1 * tut1 +
-             (876600.0*3600.0 + 8640184.812866) * tut1 + 67310.54841  // sec
-     temp <- fmod(temp * deg2rad / 240.0) twopi //360/86400 = 1/240, to deg, to rad
-
-     // ------------------------ check quadrants ---------------------
-     if (temp < 0.0) then
-         temp <- temp + twopi
-
-     temp
+    fmod(( -6.2e-6 * tut1 * tut1 * tut1 + 0.093104 * (tut1**2.0) +
+         (876600.0 * 3600.0 + 8640184.812866) * tut1 + 67310.54841) * deg2rad / 240.0) twopi 
+    |> fixQuadrant
 
 let initl (satn : int)
           (whichconst: GravConstType)
@@ -148,8 +146,7 @@ let initl (satn : int)
         fk5r   <- 5.07551419432269442e-15
         c1p2p  <- c1 + twopi
         gsto   <- fmod (thgr70 + c1*ds70 + c1p2p*tfrac + ts70*ts70*fk5r) twopi
-        if (gsto < 0.0) then
-            gsto <- gsto + twopi
+                  |> fixQuadrant
     else
         gsto <- gstime(epoch + 2433281.5)
 
@@ -327,10 +324,6 @@ let dspace
            (nodem : double byref)
            (dndt : double byref)
            (nm : double byref) =
-
-//    int iretn  iret;
-//    double delt ft theta x2li x2omi xl xldot  xnddt xndt xomi g22 g32
-//        g44 g52 g54 fasx2 fasx4 fasx6 rptim  step2 stepn  stepp;
 
     let mutable delt  = Double.NaN
     let mutable xndt  = Double.NaN
