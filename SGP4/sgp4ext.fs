@@ -37,6 +37,7 @@ let newtonnu (ecc : double) (nu : double) (e0 : double byref) (m : double byref)
              e0   <- atan2 sine cose
              m    <- e0 - ecc * sin(e0)
         // Hyperbolic:
+        // TODO this branch is not tested using the provided tests dataset (and parameters 'a', 'v' and '72')
         else
             if ( ecc > 1.0 + small ) then
                 if ((ecc > 1.0 ) && (Math.Abs(nu)+0.00001 < PI-acos(1.0 /ecc))) then
@@ -70,41 +71,45 @@ let rv2coe (r : array<double>)
            (truelon : double byref)
            (lonper : double byref) =
 
-    let nbar             = [|Double.NaN; Double.NaN; Double.NaN|]
-    let mutable magr     = Double.NaN
-    let mutable magv     = Double.NaN
-    let mutable magn     = Double.NaN
-    let ebar             = [|Double.NaN; Double.NaN; Double.NaN|]
-    let mutable sme      = Double.NaN
-    let mutable rdotv    = Double.NaN
-    let mutable infinite = Double.NaN
-    let mutable temp     = Double.NaN
-    let mutable c1       = Double.NaN
-    let mutable hk       = Double.NaN
-    let mutable magh     = Double.NaN
-    let mutable e        = Double.NaN
+    let getLongitude (bar0 : double) (vecMag : double) = 
+        let mutable temp = bar0 / vecMag
+        if ( Math.Abs(temp) > 1.0  ) then
+            temp <- sgn(temp)
+        acos(temp)
 
-    let mutable typeorbit = OrbitType.Undefined
+    let getOrbitType  (ecc : double) (incl : double) = 
+        // TODO Only the EllipticalInclined branch is tested using the provided tests dataset (and parameters 'a', 'v' and '72')
+        if ( ecc < small ) then
+            // Circular equatorial:
+            if  ((incl<small) || (Math.Abs(incl-PI)<small)) then
+                OrbitType.CircularEquatorial
+            else
+                // Circular inclined:
+                OrbitType.CircularInclined
+        else
+            // Elliptical, parabolic, hyperbolic equatorial:
+            if  ((incl<small) || (Math.Abs(incl-PI)<small)) then
+                OrbitType.EllipticalParabolicHyperbolicEquatorial
+            else
+                OrbitType.EllipticalInclined
 
-    magr <- mag r
-    magv <- mag v
+    let magr = mag r
+    let magv2 = (mag v) ** 2.0
 
     // Find h n and e vectors:
     let hbar = cross r v
-    magh <- mag hbar
+    let magh = mag hbar
+
     if ( magh > small ) then
-        nbar.[0] <- -hbar.[1]
-        nbar.[1] <-  hbar.[0]
-        nbar.[2] <-   0.0
-        magn <- mag nbar
-        c1 <- magv*magv - mu /magr
-        rdotv <- dot r v
-        for i in [0..2] do
-            ebar.[i] <- (c1*r.[i] - rdotv*v.[i])/mu
+        let nbar = [| -hbar.[1]; hbar.[0]; 0.0 |]
+        let magn = mag nbar
+        let c1 = magv2 - mu /magr
+        let rdotv = dot r v
+        let ebar = [|0..2|] |> Array.map (fun i -> (c1*r.[i] - rdotv*v.[i])/mu)
         ecc <- mag ebar
 
         // Find a e and semi-latus rectum:
-        sme <- ( magv*magv*0.5  ) - ( mu /magr )
+        let sme =( magv2*0.5  ) - ( mu /magr )
         if ( Math.Abs( sme ) > small ) then
             a <- -mu  / (2.0 *sme)
         else
@@ -112,31 +117,16 @@ let rv2coe (r : array<double>)
         p <- magh*magh/mu
 
         // Find inclination:
-        hk <- hbar.[2]/magh
-        incl <- acos(hk)
+        incl <- hbar.[2]/magh |> acos
 
         // Determine type of orbit for later use:
         //   elliptical, parabolic, hyperbolic inclined
-        typeorbit <- OrbitType.EllipticalInclined
-        if ( ecc < small ) then
-            // Circular equatorial:
-            if  ((incl<small) || (Math.Abs(incl-PI)<small)) then
-                typeorbit <- OrbitType.CircularEquatorial
-            else
-                // Circular inclined:
-                typeorbit <- OrbitType.CircularInclined
-        else
-            // Elliptical, parabolic, hyperbolic equatorial:
-            if  ((incl<small) || (Math.Abs(incl-PI)<small)) then
-                typeorbit <- OrbitType.EllipticalParabolicHyperbolicEquatorial
+        let typeorbit = getOrbitType ecc incl
 
         // Find longitude of ascending node:
         if ( magn > small ) then
-            temp <- nbar.[0] / magn
-            if ( Math.Abs(temp) > 1.0  ) then
-                temp <- sgn(temp)
-            omega <- acos(temp)
-            if ( nbar.[1] < 0.0  ) then
+            omega <- getLongitude nbar.[0] magn
+            if ( nbar.[1] < 0.0 ) then
                 omega <- twopi - omega
         else
             omega <- undefined
@@ -144,7 +134,7 @@ let rv2coe (r : array<double>)
         // Find argument of perigee:
         if ( typeorbit = OrbitType.EllipticalInclined ) then
             argp <- angle nbar ebar
-            if ( ebar.[2] < 0.0  ) then
+            if ( ebar.[2] < 0.0 ) then
                 argp <- twopi - argp
         else
             argp <- undefined
@@ -160,7 +150,7 @@ let rv2coe (r : array<double>)
         // Find argument of latitude - circular inclined:
         if ( typeorbit = OrbitType.CircularInclined ) then
             arglat <- angle nbar r
-            if ( r.[2] < 0.0  ) then
+            if ( r.[2] < 0.0 ) then
                 arglat <- twopi - arglat
             m <- arglat
         else
@@ -168,10 +158,8 @@ let rv2coe (r : array<double>)
 
         // Find longitude of perigee - elliptical equatorial:
         if  (( ecc>small ) && ( typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial)) then
-            temp <- ebar.[0]/ecc
-            if ( Math.Abs(temp) > 1.0  ) then
-                temp <- sgn(temp)
-            lonper <- acos( temp )
+            // TODO this branch is not tested using the provided tests dataset (and parameters 'a', 'v' and '72' 
+            lonper <- getLongitude ebar.[0] ecc
             if ( ebar.[1] < 0.0  ) then
                 lonper <- twopi - lonper
             if ( incl > halfpi ) then
@@ -181,10 +169,8 @@ let rv2coe (r : array<double>)
 
         // Find true longitude - circular equatorial:
         if  (( magr>small ) && ( typeorbit = OrbitType.CircularEquatorial)) then
-            temp <- r.[0]/magr
-            if ( Math.Abs(temp) > 1.0  ) then
-                temp <- sgn(temp)
-            truelon <- acos( temp )
+            // TODO this branch is not tested using the provided tests dataset (and parameters 'a', 'v' and '72'
+            truelon <- getLongitude r.[0] magr
             if ( r.[1] < 0.0  ) then
                 truelon <- twopi - truelon
             if ( incl > halfpi ) then
@@ -195,6 +181,7 @@ let rv2coe (r : array<double>)
 
         // Find mean anomaly for all orbits:
         if ( typeorbit = OrbitType.EllipticalInclined || typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial ) then
+            let mutable e = Double.NaN // e is unused
             newtonnu ecc nu &e &m
     else
         p       <- undefined
