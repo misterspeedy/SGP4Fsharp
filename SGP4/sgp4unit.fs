@@ -22,70 +22,44 @@ type GravityConstants =
     }
 
 let getgravconst (whichconst : GravConstType) =
+    let mu = match whichconst with
+             | Wgs72old -> 398600.79964 // in km3 / s2
+             | Wgs72 ->    398600.8
+             | Wgs84 ->    398600.5
+    let radiusearthkm = match whichconst with
+             | Wgs72old   
+             | Wgs72 ->    6378.135 // km
+             | Wgs84 ->    6378.137
+    let xke = match whichconst with
+             | Wgs72old -> 0.0743669161 
+             | Wgs72
+             | Wgs84 ->    60.0 / sqrt(radiusearthkm**3.0/mu)
+    let j2 = match whichconst with
+             | Wgs72old 
+             | Wgs72 ->    0.001082616
+             | Wgs84 ->    0.00108262998905
+    let j3 = match whichconst with
+             | Wgs72old 
+             | Wgs72 ->    -0.00000253881
+             | Wgs84 ->    -0.00000253215306
+    let j4 = match whichconst with
+             | Wgs72old
+             | Wgs72 ->    -0.00000165597
+             | Wgs84 ->    -0.00000161098761
 
-    // TODO eliminate repetition below
-    match whichconst with
-    // -- wgs-72 low precision str#3 constants --
-    | Wgs72old -> 
-        let mu     =   398600.79964   // in km3 / s2
-        let radiusearthkm = 6378.135  // km
-        let xke    =   0.0743669161
-        let j2     =   0.001082616
-        let j3     =  -0.00000253881
-        let j4     =  -0.00000165597
-        let tumin  = 1.0 / xke
-        let j3oj2  = j3 / j2        
-        {
-            mu     =   mu
-            radiusearthkm = radiusearthkm
-            xke    = xke
-            j2     = j2
-            j3     = j3
-            j4     = j4
-            tumin  = tumin
-            j3oj2  = j3oj2
-        }
-    // ------------ wgs-72 constants ------------
-    | Wgs72 -> 
-        let mu     =   398600.8       // in km3 / s2
-        let radiusearthkm = 6378.135  // km
-        let xke    =   60.0 / sqrt(radiusearthkm**3.0/mu)
-        let j2     =   0.001082616
-        let j3     =  -0.00000253881
-        let j4     =  -0.00000165597
-        let tumin  = 1.0 / xke
-        let j3oj2  = j3 / j2
-        {
-            mu     =   mu
-            radiusearthkm = radiusearthkm
-            xke    = xke
-            j2     = j2
-            j3     = j3
-            j4     = j4
-            tumin  = tumin
-            j3oj2  = j3oj2
-        }    
-    // ------------ wgs-84 constants ------------
-    | Wgs84 -> 
-        let mu     =   398600.5       // in km3 / s2
-        let radiusearthkm = 6378.137  // km
-        let xke    =   60.0 / sqrt(radiusearthkm**3.0/mu)
-        let j2     =   0.00108262998905
-        let j3     =  -0.00000253215306
-        let j4     =  -0.00000161098761
-        let tumin  = 1.0 / xke
-        let j3oj2  = j3 / j2
-        {
-            mu     =   mu
-            radiusearthkm = radiusearthkm
-            xke    = xke
-            j2     = j2
-            j3     = j3
-            j4     = j4
-            tumin  = tumin
-            j3oj2  = j3oj2
-        }
+    let tumin  = 1.0 / xke
+    let j3oj2  = j3 / j2   
 
+    {
+        mu     =   mu
+        radiusearthkm = radiusearthkm
+        xke    = xke
+        j2     = j2
+        j3     = j3
+        j4     = j4
+        tumin  = tumin
+        j3oj2  = j3oj2
+    }
 
 let fixQuadrant x = 
     if x < 0.0 then
