@@ -6,13 +6,12 @@ open Sgp4Math
 open sgp4common
 
 let angle (vec1 : array<double>) (vec2 : array<double>) =
-    let magv1 = mag vec1
-    let magv2 = mag vec2
+    let magv1v2 = mag vec1 * mag vec2
 
-    if (magv1 * magv2 > small * small) then
-        let mutable temp = (dot vec1 vec2) / (magv1 * magv2)
+    if (magv1v2 > small**2.0) then
+        let mutable temp = (dot vec1 vec2) / magv1v2
         if Math.Abs(temp) > 1.0 then
-            temp <- sgn temp * 1.0
+            temp <- sgn temp
         acos(temp)
     else
         undefined
