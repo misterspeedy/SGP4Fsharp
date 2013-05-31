@@ -31,18 +31,11 @@ let runTests dataDir =
 
     // TODO get rid of some of these - subsumed in coe record
 
-    let mutable sec            = Double.NaN
     let mutable jd             = Double.NaN
     let mutable tsince         = Double.NaN
     let mutable startmfe       = Double.NaN
     let mutable stopmfe        = Double.NaN
     let mutable deltamin       = Double.NaN
-
-    let mutable year = Int32.MinValue
-    let mutable mon  = Int32.MinValue
-    let mutable day  = Int32.MinValue
-    let mutable hr   = Int32.MinValue
-    let mutable min  = Int32.MinValue
 
     let satrec : ElSetRec = 
         {
@@ -214,19 +207,19 @@ let runTests dataDir =
             jd <- satrec.jdsatepoch
             let eName = new String(longstr1.[2..6]) + ".e"
             let eLines = new ResizeArray<string>()
-            invjday jd &year &mon &day &hr &min &sec
+            let ijd = invjday jd 
             eLines.Add("stk.v.4.3 ") // must use 4.3...
 
             eLines.Add("")
             eLines.Add("BEGIN Ephemeris ")
             eLines.Add(" ")
             eLines.Add("NumberOfEphemerisPoints		146 ")
-            eLines.Add(sprintf "ScenarioEpoch	  %3i %3s%5i%3i:%2i:%12.9f " day monstr.[mon-1] year hr min sec) // F# fixed bug - mon range is 1..12 so out of index range
+            eLines.Add(sprintf "ScenarioEpoch	  %3i %3s%5i%3i:%2i:%12.9f " ijd.day monstr.[ijd.mon-1] ijd.year ijd.hr ijd.minute ijd.sec) // F# fixed bug - mon range is 1..12 so out of index range
             eLines.Add("InterpolationMethod		Lagrange ")
             eLines.Add("InterpolationOrder		5 ")
             eLines.Add("CentralBody				Earth ")
             eLines.Add("CoordinateSystem			TEME ")
-            eLines.Add(sprintf "CoordinateSystemEpoch	%3i %3s%5i%3i:%2i:%12.9f " day monstr.[mon-1] year hr min sec) // F# fixed bug - mon range is 1..12 so out of index range
+            eLines.Add(sprintf "CoordinateSystemEpoch	%3i %3s%5i%3i:%2i:%12.9f " ijd.day monstr.[ijd.mon-1] ijd.year ijd.hr ijd.minute ijd.sec) // F# fixed bug - mon range is 1..12 so out of index range
             eLines.Add("DistanceUnit			Kilometers ")
             eLines.Add(" ")
             eLines.Add("EphemerisTimePosVel ")
@@ -246,8 +239,6 @@ let runTests dataDir =
                 if (tsince > stopmfe) then
                     tsince <- stopmfe
 
-                // STATUS - just changed sgp4 to be a pure function
-                // regressoion test fails with one missing line
                 let ok, ro, vo = sgp4 whichconst satrec tsince 
 
                 if ok then
@@ -259,12 +250,12 @@ let runTests dataDir =
                     if (satrec.error = 0s) then
                         if ((typerun <> 'v') && (typerun <> 'c')) then
                             jd <- satrec.jdsatepoch + tsince/1440.0
-                            invjday jd &year &mon &day &hr &min &sec 
+                            let ijd = invjday jd  
                             outFileLines.Add(sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f %5i%3i%3i %2i:%2i:%9.6f"
-                                                       tsince ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2] year mon day hr min sec )
+                                                       tsince ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2] ijd.year ijd.mon ijd.day ijd.hr ijd.minute ijd.sec )
                         else
                             jd <- satrec.jdsatepoch + tsince/1440.0
-                            invjday jd &year &mon &day &hr &min &sec 
+                            let ijd = invjday jd
 
                             eLines.Add(sprintf " %16.6f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f "
                                                        (tsince*60.0) ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2])
@@ -275,7 +266,7 @@ let runTests dataDir =
                             let coe = rv2coe ro vo gravConsts.mu
 
                             let outLinePart2 = sprintf " %14.6f %8.6f %10.5f %10.5f %10.5f %10.5f %10.5f %5i%3i%3i %2i:%2i:%9.6f"
-                                                        coe.a coe.ecc (coe.incl*rad) (coe.node*rad) (coe.argp*rad) (coe.nu*rad) (coe.m*rad) year mon day hr min sec
+                                                        coe.a coe.ecc (coe.incl*rad) (coe.node*rad) (coe.argp*rad) (coe.nu*rad) (coe.m*rad) ijd.year ijd.mon ijd.day ijd.hr ijd.minute ijd.sec
 
                             outFileLines.Add(outLinePart1 + outLinePart2)
                 else

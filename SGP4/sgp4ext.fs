@@ -258,6 +258,7 @@ let rv2coe (r : array<double>)
            lonper = undefined
         }
 
+// TODO move these date/time calculations into their own unit
         
 type YearMonthDayHourMinuteSecond =
     {
@@ -315,34 +316,35 @@ let days2mdhms (year : int)
         sec = sec
     }
 
-let invjday (jd : double)
-            (year : int byref)
-            (mon : int byref)
-            (day : int byref)
-            (hr : int byref)
-            (minute : int byref)
-            (sec : double byref) =
+let invjday (jd : double) =
     // Find year and days of the year:
     let temp = jd - 2415019.5
     let tu = temp / 365.25
-    year <- 1900 + int(floor(tu))
-    let mutable leapyrs = int(floor(double((year - 1901)) * 0.25))
+    let year = 1900 + int(floor(tu))
+    let leapyrs = int(floor(double((year - 1901)) * 0.25))
 
     // Optional nudge by 8.64x10-7 sec to get even outputs:
     // days    = temp - ((year - 1900) * 365.0 + leapyrs) +            0.00000000001
-    let mutable days = temp - float(((year - 1900) * 365 + leapyrs)) + 0.00000000001
+    let days = temp - float(((year - 1900) * 365 + leapyrs)) + 0.00000000001
 
     // Check for case of beginning of a year:
-    if (days < 1.0) then
-        year    <- year - 1
-        leapyrs <- int(floor(double((year - 1901)) * 0.25))
-        days    <- temp - (double((year - 1900) * 365) + double(leapyrs))
+    let year', days' = 
+        if (days < 1.0) then
+            let year' = year - 1
+            let leapyrs' = int(floor(double((year' - 1901)) * 0.25))
+            let days' = temp - (double((year' - 1900) * 365) + double(leapyrs'))
+            year', days'
+        else
+            year, days
 
     // Find remaining data:
-    let mdhms = days2mdhms year days
+    let mdhms = days2mdhms year' days'
     
-    mon <- mdhms.mon
-    day <- mdhms.day
-    hr  <- mdhms.hr
-    minute <- mdhms.minute
-    sec <- mdhms.sec - 0.00000086400
+    {
+        year   = year'
+        mon    = mdhms.mon
+        day    = mdhms.day
+        hr     = mdhms.hr
+        minute = mdhms.minute
+        sec    = mdhms.sec - 0.00000086400
+    }
