@@ -19,44 +19,59 @@ let angle (vec1 : array<double>) (vec2 : array<double>) =
 let asinh xval =
     log (xval + sqrt(xval * xval + 1.0))
 
-let newtonnu (ecc : double) (nu : double) (e0 : double byref) (m : double byref) =
-    let mutable sine = Double.NaN
-    let mutable cose = Double.NaN
+type NewTonnuResult =
+    {
+        e0 : double
+        m : double
+    }
 
-    e0 <- 999999.9
-    m <- 999999.9 
-
-    if (Math.Abs(ecc) < small) then
-        m <- nu
-        e0 <- nu
-    else
-        // Elliptical:
-        if (ecc < 1.0 - small) then
-             sine <- ( sqrt( 1.0 - ecc*ecc ) * sin(nu) ) / ( 1.0 + ecc * cos(nu) )
-             cose <- ( ecc + cos(nu) ) / ( 1.0  + ecc*cos(nu) )
-             e0   <- atan2 sine cose
-             m    <- e0 - ecc * sin(e0)
-        // Hyperbolic:
-        // TODO this branch is not tested using the provided tests dataset (and parameters 'a', 'v' and '72')
+let newtonnu (ecc : double) (nu : double)  =
+    let e0, m = 
+        if (Math.Abs(ecc) < small) then
+            nu, nu
         else
-            if ( ecc > 1.0 + small ) then
-                if ((ecc > 1.0 ) && (Math.Abs(nu)+0.00001 < PI-acos(1.0 /ecc))) then
-                    sine <- ( sqrt( ecc*ecc-1.0  ) * sin(nu) ) / ( 1.0  + ecc*cos(nu) )
-                    e0   <- asinh( sine )
-                    m    <- ecc*sinh(e0) - e0
+            // Elliptical:
+            if (ecc < 1.0 - small) then
+                 let sine = ( sqrt( 1.0 - ecc*ecc ) * sin(nu) ) / ( 1.0 + ecc * cos(nu) )
+                 let cose = ( ecc + cos(nu) ) / ( 1.0  + ecc*cos(nu) )
+                 let e0 = atan2 sine cose
+                 let m = e0 - ecc * sin(e0)
+                 e0, m
+            // Hyperbolic:
+            // TODO this branch is not tested using the provided tests dataset (and parameters 'a', 'v' and '72')
             else
-                // Parabolic:
-                if ( Math.Abs(nu) < 168.0*PI/180.0  ) then
-                    e0 <- tan( nu*0.5 )
-                    m  <- e0 + (e0*e0*e0)/3.0
-
-    if ( ecc < 1.0  ) then
-        m <- fmod m (2.0 * PI)
-        if ( m < 0.0  ) then
-            m <- m + 2.0 * PI
-        e0 <- fmod e0 (2.0 * PI)
-
-// TODO rename
+                if ( ecc > 1.0 + small ) then
+                    if ((ecc > 1.0 ) && (Math.Abs(nu)+0.00001 < PI-acos(1.0 /ecc))) then
+                        let sine = ( sqrt( ecc*ecc-1.0  ) * sin(nu) ) / ( 1.0  + ecc*cos(nu) )
+                        let e0 = asinh( sine )
+                        let m = ecc*sinh(e0) - e0
+                        e0, m
+                    else
+                        infinite, infinite
+                else
+                    // Parabolic:
+                    if ( Math.Abs(nu) < 168.0*PI/180.0  ) then
+                        let e0 = tan( nu*0.5 )
+                        let m = e0 + (e0*e0*e0)/3.0
+                        e0, m
+                    else
+                        infinite, infinite
+    let e0', m' = 
+        if ( ecc < 1.0  ) then
+            let fmtwopi = fmod m twopi
+            let m =
+                if ( fmtwopi < 0.0  ) then
+                    fmtwopi + twopi
+                else
+                    fmtwopi
+            let e0 = fmod e0 twopi
+            e0, m
+        else
+            e0, m
+    {
+        e0 = e0'
+        m = m'
+    }
 
 type Rv2CoeResult = 
         {
@@ -209,10 +224,8 @@ let rv2coe (r : array<double>)
             elif (typeorbit = OrbitType.CircularEquatorial) && (magr>small) then
                 truelon
             elif (typeorbit = OrbitType.EllipticalInclined) || (typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial) then
-                let mutable m' = Double.NaN
-                let mutable e = Double.NaN // e is unused
-                newtonnu ecc nu &e &m'
-                m'
+                let newt = newtonnu ecc nu
+                newt.m
             else 
                 infinite
 

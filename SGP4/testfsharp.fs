@@ -31,7 +31,6 @@ let runTests dataDir =
 
     // TODO get rid of some of these - subsumed in coe record
 
-//    //***here - getting rid of these mutables and identifying rv2coe arguments which don't need to exist
     let mutable sec            = Double.NaN
     let mutable jd             = Double.NaN
     let mutable tsince         = Double.NaN
