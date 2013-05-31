@@ -27,13 +27,13 @@ let getgravconst (whichconst : GravConstType) =
              | Wgs72 ->    398600.8
              | Wgs84 ->    398600.5
     let radiusearthkm = match whichconst with
-             | Wgs72old   
-             | Wgs72 ->    6378.135 // km
-             | Wgs84 ->    6378.137
+                        | Wgs72old   
+                        | Wgs72 ->    6378.135 // km
+                        | Wgs84 ->    6378.137
     let xke = match whichconst with
-             | Wgs72old -> 0.0743669161 
-             | Wgs72
-             | Wgs84 ->    60.0 / sqrt(radiusearthkm**3.0/mu)
+              | Wgs72old -> 0.0743669161 
+              | Wgs72
+              | Wgs84 ->    60.0 / sqrt(radiusearthkm**3.0/mu)
     let j2 = match whichconst with
              | Wgs72old 
              | Wgs72 ->    0.001082616
@@ -71,7 +71,7 @@ let gstime (jdut1 : double) =
     let tut1 = (jdut1 - 2451545.0) / 36525.0
 
     fmod(( -6.2e-6 * tut1 * tut1 * tut1 + 0.093104 * (tut1**2.0) +
-         (876600.0 * 3600.0 + 8640184.812866) * tut1 + 67310.54841) * deg2rad / 240.0) twopi 
+           (876600.0 * 3600.0 + 8640184.812866) * tut1 + 67310.54841) * deg2rad / 240.0) twopi 
     |> fixQuadrant
 
 let initl (satn : int)
@@ -697,7 +697,7 @@ let sgp4 (whichconst : GravConstType)
                     xinc  <- xincp + 1.5 * temp2 * cosip * sinip * cos2u
                     let mvt = rdotl - nm * temp1 * satrec.x1mth2 * sin2u / gravConsts.xke
                     let rvdot = rvdotl + nm * temp1 * (satrec.x1mth2 * cos2u +
-                                1.5 * satrec.con41) / gravConsts.xke
+                                 1.5 * satrec.con41) / gravConsts.xke
 
                     // Orientation vectors:
                     sinsu <- sin(su)

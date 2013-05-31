@@ -32,7 +32,7 @@ let newtonnu (ecc : double) (nu : double)  =
         else
             // Elliptical:
             if (ecc < 1.0 - small) then
-                 let sine = ( sqrt( 1.0 - ecc*ecc ) * sin(nu) ) / ( 1.0 + ecc * cos(nu) )
+                 let sine = ( sqrt( 1.0 - ecc**2.0 ) * sin(nu) ) / ( 1.0 + ecc * cos(nu) )
                  let cose = ( ecc + cos(nu) ) / ( 1.0  + ecc*cos(nu) )
                  let e0 = atan2 sine cose
                  let m = e0 - ecc * sin(e0)
@@ -42,7 +42,7 @@ let newtonnu (ecc : double) (nu : double)  =
             else
                 if ( ecc > 1.0 + small ) then
                     if ((ecc > 1.0 ) && (Math.Abs(nu)+0.00001 < PI-acos(1.0 /ecc))) then
-                        let sine = ( sqrt( ecc*ecc-1.0  ) * sin(nu) ) / ( 1.0  + ecc*cos(nu) )
+                        let sine = (sqrt( ecc**2.0 - 1.0) * sin(nu) ) / ( 1.0  + ecc*cos(nu) )
                         let e0 = asinh( sine )
                         let m = ecc*sinh(e0) - e0
                         e0, m
@@ -50,9 +50,9 @@ let newtonnu (ecc : double) (nu : double)  =
                         infinite, infinite
                 else
                     // Parabolic:
-                    if ( Math.Abs(nu) < 168.0*PI/180.0  ) then
+                    if ( Math.Abs(nu) < 168.0*deg2rad ) then
                         let e0 = tan( nu*0.5 )
-                        let m = e0 + (e0*e0*e0)/3.0
+                        let m = e0 + (e0**3.0)/3.0
                         e0, m
                     else
                         infinite, infinite
@@ -138,7 +138,7 @@ let rv2coe (r : array<double>)
             else
                 infinite
 
-        let p = magh*magh/mu
+        let p = magh**2.0/mu
 
         // Find inclination:
         let incl = hbar.[2]/magh |> acos
@@ -263,19 +263,18 @@ let jday (year : int)
          (day : int)
          (hr : int)
          (minute : int)
-         (sec : double)
-         (jd : double byref) =
+         (sec : double) =
     let doubleyear = double(year)
     let doublemon = double(mon)
     let doubleday = double(day)
     let doublehr = double(hr)
     let doubleminute = double(minute)
     
-    jd <- 367.0 * doubleyear -
-          floor((7.0 * (doubleyear + floor((doublemon + 9.0) / 12.0))) * 0.25) +
-          floor( 275.0 * doublemon / 9.0 ) +
-          doubleday + 1721013.5 +
-          ((sec / 60.0 + doubleminute) / 60.0 + doublehr) / 24.0 // ut in days
+    367.0 * doubleyear -
+    floor((7.0 * (doubleyear + floor((doublemon + 9.0) / 12.0))) * 0.25) +
+    floor( 275.0 * doublemon / 9.0 ) +
+    doubleday + 1721013.5 +
+    ((sec / 60.0 + doubleminute) / 60.0 + doublehr) / 24.0 // ut in days
 
 let days2mdhms (year : int)
                (days : double)

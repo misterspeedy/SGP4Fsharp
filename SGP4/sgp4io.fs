@@ -24,8 +24,6 @@ let twoline2rv (longstr1 : array<char>)
     let mutable stopsec       = Double.NaN
     let mutable startdayofyr  = Double.NaN
     let mutable stopdayofyr   = Double.NaN
-    let mutable jdstart       = Double.NaN
-    let mutable jdstop        = Double.NaN
 
     let mutable startyear = Int32.MinValue
     let mutable stopyear  = Int32.MinValue
@@ -197,7 +195,7 @@ let twoline2rv (longstr1 : array<char>)
         year <- int(satrec.epochyr) + 1900
 
     days2mdhms year satrec.epochdays &mon &day &hr &minute &sec
-    jday year mon day hr minute sec &satrec.jdsatepoch
+    satrec.jdsatepoch <- jday year mon day hr minute sec 
 
     // Input start stop times manually
     if ((typerun <> 'v') && (typerun <> 'c')) then
@@ -213,7 +211,7 @@ let twoline2rv (longstr1 : array<char>)
             starthr   <- ssscanf.[3] :?> int
             startmin  <- ssscanf.[4] :?> int
             startsec  <- ssscanf.[5] :?> double
-            jday startyear startmon startday starthr startmin startsec &jdstart
+            let jdstart = jday startyear startmon startday starthr startmin startsec
 
             printf("input stop prop year mon day hr min sec \n")
             let scanLine = Console.ReadLine()
@@ -224,7 +222,7 @@ let twoline2rv (longstr1 : array<char>)
             stophr   <- ssscanf.[3] :?> int
             stopmin  <- ssscanf.[4] :?> int
             stopsec  <- ssscanf.[5] :?> double
-            jday stopyear stopmon stopday stophr stopmin stopsec &jdstop 
+            let jdstop = jday stopyear stopmon stopday stophr stopmin stopsec 
 
             startmfe <- (jdstart - satrec.jdsatepoch) * 1440.0
             stopmfe  <- (jdstop - satrec.jdsatepoch) * 1440.0
@@ -247,9 +245,9 @@ let twoline2rv (longstr1 : array<char>)
             let topdayofyr = ssscanf.[1] :?> int
 
             days2mdhms startyear startdayofyr &mon &day &hr &minute &sec
-            jday startyear mon day hr minute sec &jdstart
+            let jdstart = jday startyear mon day hr minute sec
             days2mdhms stopyear stopdayofyr &mon &day &hr &minute &sec
-            jday stopyear mon day hr minute sec &jdstop
+            let jdstop = jday stopyear mon day hr minute sec
 
             startmfe <- (jdstart - satrec.jdsatepoch) * 1440.0
             stopmfe  <- (jdstop - satrec.jdsatepoch) * 1440.0
