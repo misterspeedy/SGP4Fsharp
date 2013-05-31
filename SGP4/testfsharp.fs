@@ -21,8 +21,6 @@ let Pair sequence =
 
 let runTests dataDir = 
     let mutable str = Array.zeroCreate 2
-    let mutable ro = Array.create 3 Double.NaN
-    let mutable vo = Array.create 3 Double.NaN
 
     let mutable typerun = ' '
     let mutable typeinput = ' '
@@ -31,17 +29,9 @@ let runTests dataDir =
 
     let mutable whichcon = Int32.MinValue
 
-    let mutable p              = Double.NaN
-    let mutable a              = Double.NaN
-    let mutable ecc            = Double.NaN
-    let mutable incl           = Double.NaN
-    let mutable node           = Double.NaN
-    let mutable argp           = Double.NaN
-    let mutable nu             = Double.NaN
-    let mutable m              = Double.NaN
-    let mutable arglat         = Double.NaN
-    let mutable truelon        = Double.NaN
-    let mutable lonper         = Double.NaN
+    // TODO get rid of some of these - subsumed in coe record
+
+//    //***here - getting rid of these mutables and identifying rv2coe arguments which don't need to exist
     let mutable sec            = Double.NaN
     let mutable jd             = Double.NaN
     let mutable tsince         = Double.NaN
@@ -216,77 +206,88 @@ let runTests dataDir =
         outFileLines.Add(sprintf "%i xx" satrec.satnum)
         printfn "%i" satrec.satnum
         // call the propagator to get the initial state vector value
-        sgp4 whichconst satrec 0.0 ro vo |> ignore
+        let ok, ro, vo = sgp4 whichconst satrec 0.0
 
-        // Generate .e files for stk
-        jd <- satrec.jdsatepoch
-        let eName = new String(longstr1.[2..6]) + ".e"
-        let eLines = new ResizeArray<string>()
-        invjday jd &year &mon &day &hr &min &sec
-        eLines.Add("stk.v.4.3 ") // must use 4.3...
+        if ok then
+            let ro, vo = ro.Value, vo.Value
 
-        eLines.Add("")
-        eLines.Add("BEGIN Ephemeris ")
-        eLines.Add(" ")
-        eLines.Add("NumberOfEphemerisPoints		146 ")
-        eLines.Add(sprintf "ScenarioEpoch	  %3i %3s%5i%3i:%2i:%12.9f " day monstr.[mon-1] year hr min sec) // F# fixed bug - mon range is 1..12 so out of index range
-        eLines.Add("InterpolationMethod		Lagrange ")
-        eLines.Add("InterpolationOrder		5 ")
-        eLines.Add("CentralBody				Earth ")
-        eLines.Add("CoordinateSystem			TEME ")
-        eLines.Add(sprintf "CoordinateSystemEpoch	%3i %3s%5i%3i:%2i:%12.9f " day monstr.[mon-1] year hr min sec) // F# fixed bug - mon range is 1..12 so out of index range
-        eLines.Add("DistanceUnit			Kilometers ")
-        eLines.Add(" ")
-        eLines.Add("EphemerisTimePosVel ")
-        eLines.Add(" ")
-        eLines.Add(sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f" satrec.t ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2])
-        outFileLines.Add(sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f" satrec.t ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2])
+            // Generate .e files for stk
+            jd <- satrec.jdsatepoch
+            let eName = new String(longstr1.[2..6]) + ".e"
+            let eLines = new ResizeArray<string>()
+            invjday jd &year &mon &day &hr &min &sec
+            eLines.Add("stk.v.4.3 ") // must use 4.3...
 
-        tsince <- startmfe
-        // check so the first value isn't written twice
-        if ( Math.Abs(tsince) > 1.0e-8 ) then
-            tsince <- tsince - deltamin
+            eLines.Add("")
+            eLines.Add("BEGIN Ephemeris ")
+            eLines.Add(" ")
+            eLines.Add("NumberOfEphemerisPoints		146 ")
+            eLines.Add(sprintf "ScenarioEpoch	  %3i %3s%5i%3i:%2i:%12.9f " day monstr.[mon-1] year hr min sec) // F# fixed bug - mon range is 1..12 so out of index range
+            eLines.Add("InterpolationMethod		Lagrange ")
+            eLines.Add("InterpolationOrder		5 ")
+            eLines.Add("CentralBody				Earth ")
+            eLines.Add("CoordinateSystem			TEME ")
+            eLines.Add(sprintf "CoordinateSystemEpoch	%3i %3s%5i%3i:%2i:%12.9f " day monstr.[mon-1] year hr min sec) // F# fixed bug - mon range is 1..12 so out of index range
+            eLines.Add("DistanceUnit			Kilometers ")
+            eLines.Add(" ")
+            eLines.Add("EphemerisTimePosVel ")
+            eLines.Add(" ")
+            eLines.Add(sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f" satrec.t ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2])
+            outFileLines.Add(sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f" satrec.t ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2])
 
-        // Loop to perform the propagation:
-        while ((tsince < stopmfe) && (satrec.error = 0s)) do
-            tsince <- tsince + deltamin
+            tsince <- startmfe
+            // check so the first value isn't written twice
+            if ( Math.Abs(tsince) > 1.0e-8 ) then
+                tsince <- tsince - deltamin
 
-            if (tsince > stopmfe) then
-                tsince <- stopmfe
+            // Loop to perform the propagation:
+            while ((tsince < stopmfe) && (satrec.error = 0s)) do
+                tsince <- tsince + deltamin
 
-            sgp4 whichconst satrec tsince ro vo |> ignore // TODO handle return value
+                if (tsince > stopmfe) then
+                    tsince <- stopmfe
 
-            if (satrec.error > 0s) then
-                printfn "# *** error: t:= %f *** code = %3d" satrec.t satrec.error
+                // STATUS - just changed sgp4 to be a pure function
+                // regressoion test fails with one missing line
+                let ok, ro, vo = sgp4 whichconst satrec tsince 
 
-            if (satrec.error = 0s) then
-                if ((typerun <> 'v') && (typerun <> 'c')) then
-                    jd <- satrec.jdsatepoch + tsince/1440.0
-                    invjday jd &year &mon &day &hr &min &sec 
-                    outFileLines.Add(sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f %5i%3i%3i %2i:%2i:%9.6f"
-                                               tsince ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2] year mon day hr min sec )
+                if ok then
+                    let ro, vo = ro.Value, vo.Value
+
+                    if (satrec.error > 0s) then
+                        printfn "# *** error: t:= %f *** code = %3d" satrec.t satrec.error
+
+                    if (satrec.error = 0s) then
+                        if ((typerun <> 'v') && (typerun <> 'c')) then
+                            jd <- satrec.jdsatepoch + tsince/1440.0
+                            invjday jd &year &mon &day &hr &min &sec 
+                            outFileLines.Add(sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f %5i%3i%3i %2i:%2i:%9.6f"
+                                                       tsince ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2] year mon day hr min sec )
+                        else
+                            jd <- satrec.jdsatepoch + tsince/1440.0
+                            invjday jd &year &mon &day &hr &min &sec 
+
+                            eLines.Add(sprintf " %16.6f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f "
+                                                       (tsince*60.0) ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2])
+
+                            let outLinePart1 = sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f" 
+                                                       tsince ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2]
+
+                            let coe = rv2coe ro vo gravConsts.mu
+
+                            let outLinePart2 = sprintf " %14.6f %8.6f %10.5f %10.5f %10.5f %10.5f %10.5f %5i%3i%3i %2i:%2i:%9.6f"
+                                                        coe.a coe.ecc (coe.incl*rad) (coe.node*rad) (coe.argp*rad) (coe.nu*rad) (coe.m*rad) year mon day hr min sec
+
+                            outFileLines.Add(outLinePart1 + outLinePart2)
                 else
-                    jd <- satrec.jdsatepoch + tsince/1440.0
-                    invjday jd &year &mon &day &hr &min &sec 
+                    // TODO handle not OK from sgp4 call
+                    ()
 
-                    eLines.Add(sprintf " %16.6f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f "
-                                               (tsince*60.0) ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2])
-
-                    let outLinePart1 = sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f" 
-                                               tsince ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2]
-
-                    rv2coe ro vo gravConsts.mu &p &a &ecc &incl &node &argp &nu &m &arglat &truelon &lonper
-
-                    let outLinePart2 = sprintf " %14.6f %8.6f %10.5f %10.5f %10.5f %10.5f %10.5f %5i%3i%3i %2i:%2i:%9.6f"
-                                                a ecc (incl*rad) (node*rad) (argp*rad) (nu*rad) (m*rad) year mon day hr min sec
-
-                    outFileLines.Add(outLinePart1 + outLinePart2)
-
-
-
-        eLines.Add(" END Ephemeris ")
-        IO.File.WriteAllLines(IO.Path.Combine(dataDir, eName), eLines)
-
+            eLines.Add(" END Ephemeris ")
+            IO.File.WriteAllLines(IO.Path.Combine(dataDir, eName), eLines)
+        else
+            // TODO handle not OK from sgp4 call
+            ()
     if (typerun = 'c') then
         System.IO.File.WriteAllLines(IO.Path.Combine(dataDir, "tfsharpall.out"), outFileLines)
     else if (typerun = 'v') then

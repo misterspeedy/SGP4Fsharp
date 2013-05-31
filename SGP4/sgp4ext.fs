@@ -56,24 +56,30 @@ let newtonnu (ecc : double) (nu : double) (e0 : double byref) (m : double byref)
             m <- m + 2.0 * PI
         e0 <- fmod e0 (2.0 * PI)
 
+// TODO rename
+
+type Rv2CoeResult = 
+        {
+           p : double
+           a : double
+           ecc : double
+           incl : double
+           node : double
+           argp : double
+           nu : double
+           m : double
+           arglat : double
+           truelon : double
+           lonper : double
+        }
+
 let rv2coe (r : array<double>)
            (v : array<double>)
-           (mu : double)
-           (p : double byref)
-           (a : double byref)
-           (ecc : double byref)
-           (incl : double byref)
-           (omega : double byref)
-           (argp : double byref)
-           (nu : double byref)
-           (m : double byref)
-           (arglat : double byref)
-           (truelon : double byref)
-           (lonper : double byref) =
+           (mu : double) =
 
     let getLongitude (bar0 : double) (vecMag : double) = 
         let mutable temp = bar0 / vecMag
-        if ( Math.Abs(temp) > 1.0  ) then
+        if ( Math.Abs(temp) > 1.0 ) then
             temp <- sgn(temp)
         acos(temp)
 
@@ -106,95 +112,138 @@ let rv2coe (r : array<double>)
         let c1 = magv2 - mu /magr
         let rdotv = dot r v
         let ebar = [|0..2|] |> Array.map (fun i -> (c1*r.[i] - rdotv*v.[i])/mu)
-        ecc <- mag ebar
+        let ecc = mag ebar
 
         // Find a e and semi-latus rectum:
         let sme =( magv2*0.5  ) - ( mu /magr )
-        if ( Math.Abs( sme ) > small ) then
-            a <- -mu  / (2.0 *sme)
-        else
-            a <- infinite
-        p <- magh*magh/mu
+
+        let a =
+            if ( Math.Abs( sme ) > small ) then
+                -mu  / (2.0 *sme)
+            else
+                infinite
+
+        let p = magh*magh/mu
 
         // Find inclination:
-        incl <- hbar.[2]/magh |> acos
+        let incl = hbar.[2]/magh |> acos
 
         // Determine type of orbit for later use:
         //   elliptical, parabolic, hyperbolic inclined
         let typeorbit = getOrbitType ecc incl
 
+        // TODO these three seem to do similar things regarding < 0.0 and twopi - refactor
+
         // Find longitude of ascending node:
-        if ( magn > small ) then
-            omega <- getLongitude nbar.[0] magn
-            if ( nbar.[1] < 0.0 ) then
-                omega <- twopi - omega
-        else
-            omega <- undefined
+        let node = 
+            if ( magn > small ) then
+                let long = getLongitude nbar.[0] magn
+                if ( nbar.[1] < 0.0 ) then
+                    twopi - long
+                else
+                    long
+            else
+                undefined
 
         // Find argument of perigee:
-        if ( typeorbit = OrbitType.EllipticalInclined ) then
-            argp <- angle nbar ebar
-            if ( ebar.[2] < 0.0 ) then
-                argp <- twopi - argp
-        else
-            argp <- undefined
+        let argp = 
+            if ( typeorbit = OrbitType.EllipticalInclined ) then
+                let ang = angle nbar ebar
+                if ( ebar.[2] < 0.0 ) then
+                    twopi - ang
+                else
+                    ang
+            else
+                undefined
 
         // Find true anomaly at epoch:
-        if ( typeorbit = OrbitType.EllipticalInclined || typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial ) then
-            nu <- angle ebar r
-            if (rdotv < 0.0) then
-                nu <- twopi - nu
-        else
-            nu <- undefined
+        let nu = 
+            if ( typeorbit = OrbitType.EllipticalInclined || typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial ) then
+                let ang = angle ebar r
+                if (rdotv < 0.0) then
+                    twopi - ang
+                else
+                    ang
+            else
+                undefined
 
         // Find argument of latitude - circular inclined:
-        if ( typeorbit = OrbitType.CircularInclined ) then
-            arglat <- angle nbar r
-            if ( r.[2] < 0.0 ) then
-                arglat <- twopi - arglat
-            m <- arglat
-        else
-            arglat <- undefined
+        let arglat = 
+            if ( typeorbit = OrbitType.CircularInclined ) then
+                let ang = angle nbar r
+                if ( r.[2] < 0.0 ) then
+                    twopi - ang
+                else
+                    ang
+            else
+                undefined
 
         // Find longitude of perigee - elliptical equatorial:
-        if  (( ecc>small ) && ( typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial)) then
-            // TODO this branch is not tested using the provided tests dataset (and parameters 'a', 'v' and '72' 
-            lonper <- getLongitude ebar.[0] ecc
-            if ( ebar.[1] < 0.0  ) then
-                lonper <- twopi - lonper
-            if ( incl > halfpi ) then
-                lonper <- twopi - lonper
-        else
-            lonper <- undefined
+        let lonper = 
+            if  (( ecc>small ) && ( typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial)) then
+                // TODO this branch is not tested using the provided tests dataset (and parameters 'a', 'v' and '72' 
+                let long = getLongitude ebar.[0] ecc
+                if ( ebar.[1] < 0.0 ) || ( incl > halfpi ) then
+                    twopi - long
+                else
+                    long
+            else
+                undefined
 
         // Find true longitude - circular equatorial:
-        if  (( magr>small ) && ( typeorbit = OrbitType.CircularEquatorial)) then
-            // TODO this branch is not tested using the provided tests dataset (and parameters 'a', 'v' and '72'
-            truelon <- getLongitude r.[0] magr
-            if ( r.[1] < 0.0  ) then
-                truelon <- twopi - truelon
-            if ( incl > halfpi ) then
-                truelon <- twopi - truelon
-            m <- truelon
-        else
-            truelon <- undefined
+        let truelon = 
+            if  (( magr>small ) && ( typeorbit = OrbitType.CircularEquatorial)) then
+                // TODO this branch is not tested using the provided tests dataset (and parameters 'a', 'v' and '72'
+                let long = getLongitude r.[0] magr
+                if ( r.[1] < 0.0  ) || ( incl > halfpi ) then
+                    twopi - long
+                else 
+                    long
+            else
+                undefined
 
         // Find mean anomaly for all orbits:
-        if ( typeorbit = OrbitType.EllipticalInclined || typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial ) then
-            let mutable e = Double.NaN // e is unused
-            newtonnu ecc nu &e &m
+        let m = 
+            if (typeorbit = OrbitType.CircularInclined) && (arglat <> undefined) then 
+                arglat
+            elif (typeorbit = OrbitType.CircularEquatorial) && (magr>small) then
+                truelon
+            elif (typeorbit = OrbitType.EllipticalInclined) || (typeorbit = OrbitType.EllipticalParabolicHyperbolicEquatorial) then
+                let mutable m' = Double.NaN
+                let mutable e = Double.NaN // e is unused
+                newtonnu ecc nu &e &m'
+                m'
+            else 
+                infinite
+
+        {
+           p = p
+           a = a
+           ecc = ecc
+           incl = incl
+           node = node
+           argp = argp
+           nu = nu
+           m = m
+           arglat = arglat
+           truelon = truelon
+           lonper = lonper
+        }
+
     else
-        p       <- undefined
-        a       <- undefined
-        ecc     <- undefined
-        incl    <- undefined
-        omega   <- undefined
-        argp    <- undefined
-        nu      <- undefined
-        m       <- undefined
-        arglat  <- undefined
-        truelon <- undefined
-        lonper  <- undefined
+        {
+           p = undefined
+           a = undefined
+           ecc = undefined
+           incl = undefined
+           node = undefined
+           argp = undefined
+           nu = undefined
+           m = undefined
+           arglat = undefined
+           truelon = undefined
+           lonper = undefined
+        }
 
 let jday (year : int)
          (mon : int)

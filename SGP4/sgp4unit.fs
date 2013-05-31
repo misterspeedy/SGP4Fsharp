@@ -433,9 +433,9 @@ let dspace
 
 let sgp4 (whichconst : GravConstType)
          (satrec : ElSetRec)
-         (tsince : double)
-         (r : array<double>) // TODO vector
-         (v : array<double>) = // TODO vector
+         (tsince : double) =
+//         (r : array<double>) // TODO vector
+//         (v : array<double>) = // TODO vector
     try    
         let mutable am              = Double.NaN
         let mutable axnl            = Double.NaN       
@@ -464,10 +464,8 @@ let sgp4 (whichconst : GravConstType)
         let mutable argpp           = Double.NaN
         let mutable argpdf          = Double.NaN
         let mutable pl              = Double.NaN
-        let mutable mvt             = Double.NaN
         let mutable rdotl           = Double.NaN
         let mutable rl              = Double.NaN
-        let mutable rvdot           = Double.NaN
         let mutable rvdotl          = Double.NaN
         let mutable sinim           = Double.NaN
         let mutable sin2u           = Double.NaN
@@ -514,7 +512,6 @@ let sgp4 (whichconst : GravConstType)
         let mutable dndt            = Double.NaN
         let mutable delmtemp        = Double.NaN
 
-        let mutable mrt = 0.0 
         let mutable ktr = Int32.MinValue
 
         // Set mathematical constants:
@@ -693,14 +690,14 @@ let sgp4 (whichconst : GravConstType)
                         satrec.x1mth2 <- 1.0 - cosisq
                         satrec.x7thm1 <- 7.0*cosisq - 1.0
 
-                    mrt   <- rl * (1.0 - 1.5 * temp2 * betal * satrec.con41) +
-                             0.5 * temp1 * satrec.x1mth2 * cos2u
+                    let mrt = rl * (1.0 - 1.5 * temp2 * betal * satrec.con41) +
+                               0.5 * temp1 * satrec.x1mth2 * cos2u
                     su    <- su - 0.25 * temp2 * satrec.x7thm1 * sin2u
                     xnode <- nodep + 1.5 * temp2 * cosip * sin2u
                     xinc  <- xincp + 1.5 * temp2 * cosip * sinip * cos2u
-                    mvt   <- rdotl - nm * temp1 * satrec.x1mth2 * sin2u / gravConsts.xke
-                    rvdot <- rvdotl + nm * temp1 * (satrec.x1mth2 * cos2u +
-                             1.5 * satrec.con41) / gravConsts.xke
+                    let mvt = rdotl - nm * temp1 * satrec.x1mth2 * sin2u / gravConsts.xke
+                    let rvdot = rvdotl + nm * temp1 * (satrec.x1mth2 * cos2u +
+                                1.5 * satrec.con41) / gravConsts.xke
 
                     // Orientation vectors:
                     sinsu <- sin(su)
@@ -718,21 +715,27 @@ let sgp4 (whichconst : GravConstType)
                     vy    <- xmy * cossu - snod * sinsu
                     vz    <- sini * cossu
 
+                    if (mrt < 1.0) then
+                        satrec.error <- 6s
+                        raise (Exception("Error 6 in sgp4"))
+
                     // Position and velocity (in km and km/sec):
-                    r.[0] <- (mrt * ux)* gravConsts.radiusearthkm
-                    r.[1] <- (mrt * uy)* gravConsts.radiusearthkm
-                    r.[2] <- (mrt * uz)* gravConsts.radiusearthkm
-                    v.[0] <- (mvt * ux + rvdot * vx) * vkmpersec
-                    v.[1] <- (mvt * uy + rvdot * vy) * vkmpersec
-                    v.[2] <- (mvt * uz + rvdot * vz) * vkmpersec
+                    // Success:
+                    (
+                        true,
 
-                if (mrt < 1.0) then
-                    satrec.error <- 6s
-                    raise (Exception("Error 6 in sgp4"))
+                        // Position:
+                        [| ux; uy; uz |]
+                        |> Array.map (fun u -> (mrt * u) * gravConsts.radiusearthkm)
+                        |> Some,
 
-                true
+                        // Velocity
+                        [| ux, vx; uy, vy; uz, vz |]
+                        |> Array.map (fun (u,v) -> (mvt * u + rvdot * v) * vkmpersec)
+                        |> Some
+                    ) 
     with
-    | _ -> false
+    | _ -> (false, None, None)
 
 let dscom (epoch : double)
           (ep : double)
@@ -1398,8 +1401,6 @@ let sgp4init (whichconst : GravConstType)
     let mutable qzms2t        = Double.NaN
     let mutable ss            = Double.NaN
     let mutable x2o3          = Double.NaN
-    let r                     = [|Double.NaN; Double.NaN; Double.NaN|]
-    let v                     = [|Double.NaN; Double.NaN; Double.NaN|]
     let mutable delmotemp     = Double.NaN
     let mutable qzms2ttemp    = Double.NaN
     let mutable qzms24temp    = Double.NaN
@@ -1609,9 +1610,9 @@ let sgp4init (whichconst : GravConstType)
                         15.0 * cc1sq * (2.0 * satrec.d2 + cc1sq))
 
     // Finally propogate to zero epoch to initialize all others:
-    sgp4 whichconst satrec 0.0 r v |> ignore
+    let ok, r, v = sgp4 whichconst satrec 0.0 
 
     satrec.init <- 'n'
 
-    true
+    ok
     
