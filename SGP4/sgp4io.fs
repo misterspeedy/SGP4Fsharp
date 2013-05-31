@@ -19,7 +19,6 @@ let twoline2rv (longstr1 : array<char>)
                (satrec : ElSetRec) = 
     let xpdotp  = 1440.0 / (2.0 * PI)  // 229.1831180523293
 
-    let mutable sec           = Double.NaN
     let mutable startsec      = Double.NaN
     let mutable stopsec       = Double.NaN
     let mutable startdayofyr  = Double.NaN
@@ -47,10 +46,6 @@ let twoline2rv (longstr1 : array<char>)
 
     let mutable year = 0
 
-    let mutable mon    = Int32.MinValue
-    let mutable day    = Int32.MinValue
-    let mutable hr     = Int32.MinValue
-    let mutable minute = Int32.MinValue
     let mutable nexp   = Int32.MinValue
     let mutable ibexp  = Int32.MinValue
 
@@ -194,8 +189,8 @@ let twoline2rv (longstr1 : array<char>)
     else
         year <- int(satrec.epochyr) + 1900
 
-    days2mdhms year satrec.epochdays &mon &day &hr &minute &sec
-    satrec.jdsatepoch <- jday year mon day hr minute sec 
+    let ymdhms = days2mdhms year satrec.epochdays
+    satrec.jdsatepoch <- jday ymdhms 
 
     // Input start stop times manually
     if ((typerun <> 'v') && (typerun <> 'c')) then
@@ -205,24 +200,30 @@ let twoline2rv (longstr1 : array<char>)
             // Make sure there is no space at the end of the format specifiers in scanf!
             let scanLine = Console.ReadLine()
             let ssscanf = sscanf "%i %i %i %i %i %lf" scanLine
-            startyear <- ssscanf.[0] :?> int
-            startmon  <- ssscanf.[1] :?> int
-            startday  <- ssscanf.[2] :?> int
-            starthr   <- ssscanf.[3] :?> int
-            startmin  <- ssscanf.[4] :?> int
-            startsec  <- ssscanf.[5] :?> double
-            let jdstart = jday startyear startmon startday starthr startmin startsec
+            let startymdhms = 
+                {
+                     year   = ssscanf.[0] :?> int
+                     mon    = ssscanf.[1] :?> int
+                     day    = ssscanf.[2] :?> int
+                     hr     = ssscanf.[3] :?> int
+                     minute = ssscanf.[4] :?> int
+                     sec    = ssscanf.[5] :?> double
+                }
+            let jdstart = jday startymdhms
 
             printf("input stop prop year mon day hr min sec \n")
             let scanLine = Console.ReadLine()
             let ssscanf = sscanf "%i %i %i %i %i %lf" scanLine
-            stopyear <- ssscanf.[0] :?> int
-            stopmon  <- ssscanf.[1] :?> int
-            stopday  <- ssscanf.[2] :?> int
-            stophr   <- ssscanf.[3] :?> int
-            stopmin  <- ssscanf.[4] :?> int
-            stopsec  <- ssscanf.[5] :?> double
-            let jdstop = jday stopyear stopmon stopday stophr stopmin stopsec 
+            let stopymdhms = 
+                {
+                     year   = ssscanf.[0] :?> int
+                     mon    = ssscanf.[1] :?> int
+                     day    = ssscanf.[2] :?> int
+                     hr     = ssscanf.[3] :?> int
+                     minute = ssscanf.[4] :?> int
+                     sec    = ssscanf.[5] :?> double
+                }
+            let jdstop = jday stopymdhms
 
             startmfe <- (jdstart - satrec.jdsatepoch) * 1440.0
             stopmfe  <- (jdstop - satrec.jdsatepoch) * 1440.0
@@ -244,10 +245,10 @@ let twoline2rv (longstr1 : array<char>)
             let stopyear = ssscanf.[0] :?> int
             let topdayofyr = ssscanf.[1] :?> int
 
-            days2mdhms startyear startdayofyr &mon &day &hr &minute &sec
-            let jdstart = jday startyear mon day hr minute sec
-            days2mdhms stopyear stopdayofyr &mon &day &hr &minute &sec
-            let jdstop = jday stopyear mon day hr minute sec
+            let startymdhms = days2mdhms startyear startdayofyr
+            let jdstart = jday startymdhms
+            let stopymdhms = days2mdhms stopyear stopdayofyr
+            let jdstop = jday stopymdhms
 
             startmfe <- (jdstart - satrec.jdsatepoch) * 1440.0
             stopmfe  <- (jdstop - satrec.jdsatepoch) * 1440.0

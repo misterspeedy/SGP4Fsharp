@@ -258,33 +258,32 @@ let rv2coe (r : array<double>)
            lonper = undefined
         }
 
-let jday (year : int)
-         (mon : int)
-         (day : int)
-         (hr : int)
-         (minute : int)
-         (sec : double) =
-    let doubleyear = double(year)
-    let doublemon = double(mon)
-    let doubleday = double(day)
-    let doublehr = double(hr)
-    let doubleminute = double(minute)
+        
+type YearMonthDayHourMinuteSecond =
+    {
+        year : int
+        mon : int 
+        day : int 
+        hr : int 
+        minute : int 
+        sec : double  
+    }
+
+let jday (ymdhms : YearMonthDayHourMinuteSecond) =
+    let doubleyear = double(ymdhms.year)
+    let doublemon = double(ymdhms.mon)
+    let doubleday = double(ymdhms.day)
+    let doublehr = double(ymdhms.hr)
+    let doubleminute = double(ymdhms.minute)
     
     367.0 * doubleyear -
     floor((7.0 * (doubleyear + floor((doublemon + 9.0) / 12.0))) * 0.25) +
     floor( 275.0 * doublemon / 9.0 ) +
     doubleday + 1721013.5 +
-    ((sec / 60.0 + doubleminute) / 60.0 + doublehr) / 24.0 // ut in days
+    ((ymdhms.sec / 60.0 + doubleminute) / 60.0 + doublehr) / 24.0 // ut in days
 
 let days2mdhms (year : int)
-               (days : double)
-               (mon : int byref)
-               (day : int byref)
-               (hr : int byref)
-               (minute : int byref)
-               (sec : double byref) =
-    let mutable temp = Double.NaN
-
+               (days : double) =
     let lmonth = [|31; 28; 31; 30; 31; 30; 31; 31; 30; 31; 30; 31|]
 
     let dayofyr = days |> floor |> int
@@ -299,15 +298,22 @@ let days2mdhms (year : int)
     while ((dayofyr > inttemp + lmonth.[i-1]) && (i < 12)) do
        inttemp <- inttemp + lmonth.[i-1]
        i <- i + 1
-    mon <- i
-    day <- dayofyr - inttemp
-
+    let mon = i
+    let day = dayofyr - inttemp
     // Find hours minutes and seconds
-    temp   <- (days - double(dayofyr)) * 24.0
-    hr     <- int(floor(temp))
-    temp   <- (temp - float(hr)) * 60.0
-    minute <- int(floor(temp))
-    sec    <- (temp - float(minute)) * 60.0
+    let temp   = (days - double(dayofyr)) * 24.0
+    let hr     = int(floor(temp))
+    let temp'  = (temp - float(hr)) * 60.0
+    let minute = int(floor(temp'))
+    let sec    = (temp' - float(minute)) * 60.0
+    {
+        year = year
+        mon = mon
+        day = day
+        hr = hr
+        minute = minute
+        sec = sec
+    }
 
 let invjday (jd : double)
             (year : int byref)
@@ -333,5 +339,10 @@ let invjday (jd : double)
         days    <- temp - (double((year - 1900) * 365) + double(leapyrs))
 
     // Find remaining data:
-    days2mdhms year days &mon &day &hr &minute &sec
-    sec <- sec - 0.00000086400
+    let mdhms = days2mdhms year days
+    
+    mon <- mdhms.mon
+    day <- mdhms.day
+    hr  <- mdhms.hr
+    minute <- mdhms.minute
+    sec <- mdhms.sec - 0.00000086400
