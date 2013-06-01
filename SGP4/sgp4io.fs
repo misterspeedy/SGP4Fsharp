@@ -17,45 +17,15 @@ let twoline2rv (longstr1 : array<char>)
                (stopmfe : double byref)
                (deltamin : double byref) 
                (satrec : ElSetRec) = 
-    let xpdotp  = 1440.0 / (2.0 * PI)  // 229.1831180523293
-
-    let mutable startsec      = Double.NaN
-    let mutable stopsec       = Double.NaN
-    let mutable startdayofyr  = Double.NaN
-    let mutable stopdayofyr   = Double.NaN
-
-    let mutable startyear = Int32.MinValue
-    let mutable stopyear  = Int32.MinValue
-    let mutable startmon  = Int32.MinValue
-    let mutable stopmon   = Int32.MinValue
-    let mutable startday  = Int32.MinValue
-    let mutable stopday   = Int32.MinValue
-    let mutable starthr   = Int32.MinValue
-    let mutable stophr    = Int32.MinValue
-    let mutable startmin  = Int32.MinValue
-    let mutable stopmin   = Int32.MinValue
-    let mutable cardnumb  = Int32.MinValue
-    let mutable numb      = Int32.MinValue
-    let mutable j         = Int32.MinValue
+    let xpdotp  = 1440.0 / twopi
 
     let mutable revnum = 0L
-    let mutable elnum = 0L
-
-    let mutable classification = ' '
-    let mutable intldesg = [||]
-
-    let mutable year = 0
-
-    let mutable nexp   = Int32.MinValue
-    let mutable ibexp  = Int32.MinValue
 
     let gravConsts = getgravconst whichconst 
-    
-    //&tumin &mu &radiusearthkm &xke &j2 &j3 &j4 &j3oj2
 
     satrec.error <- 0s
 
-    // Set the implied decimal points since doing a formated read
+    // Set the implied decimal points since doing a formatted read
     // fixes for bad input data values (missing, ...):
     for j in [10..15] do
         if (longstr1.[j] = ' ') then
@@ -87,19 +57,18 @@ let twoline2rv (longstr1 : array<char>)
 
     let sscanf1 = sscanf "%2d %5ld %1c %10s %2d %12lf %11lf %7lf %2d %7lf %2d %2d %6ld" (new String(longstr1))
 
-    cardnumb         <- sscanf1.[0]  :?> int
-    satrec.satnum    <- sscanf1.[1]  :?> int64 |> int
-    classification   <- sscanf1.[2]  :?> char
-    intldesg         <- (sscanf1.[3]  :?> string).ToCharArray()
-    satrec.epochyr   <- sscanf1.[4]  :?> int |> int16
-    satrec.epochdays <- sscanf1.[5]  :?> double
-    satrec.ndot      <- sscanf1.[6]  :?> double
-    satrec.nddot     <- sscanf1.[7]  :?> double
-    nexp             <- sscanf1.[8]  :?> int
-    satrec.bstar     <- sscanf1.[9]  :?> double
-    ibexp            <- sscanf1.[10] :?> int
-    numb             <- sscanf1.[11] :?> int
-    elnum            <- sscanf1.[12] :?> int64
+    satrec.satnum      <- sscanf1.[1]  :?> int64 |> int
+    let classification =  sscanf1.[2]  :?> char
+    let intldesg       =  (sscanf1.[3]  :?> string).ToCharArray()
+    satrec.epochyr     <- sscanf1.[4]  :?> int |> int16
+    satrec.epochdays   <- sscanf1.[5]  :?> double
+    satrec.ndot        <- sscanf1.[6]  :?> double
+    satrec.nddot       <- sscanf1.[7]  :?> double
+    let nexp           =  sscanf1.[8]  :?> int
+    satrec.bstar       <- sscanf1.[9]  :?> double
+    let ibexp          =  sscanf1.[10] :?> int
+    let numb           =  sscanf1.[11] :?> int
+    let elnum          =  sscanf1.[12] :?> int64
 
     // Run for specified times from the file:
     if (typerun = 'v') then 
@@ -107,7 +76,7 @@ let twoline2rv (longstr1 : array<char>)
             //let sscanf2 = sscanf "%2d %5ld %9lf %9lf %8lf %9lf %9lf %10lf %6ld %lf %lf %lf" (new String(longstr2))
             let str = new String(longstr2)
             let sscanf2 = sscanf "%2d %5ld %9lf %9lf %8lf %9lf %9lf %12lf %6ld %lf %lf %lf" str // 5th from last changed from 11 to 12
-            cardnumb      <- sscanf2.[0]  :?> int
+            let cardnumb  =  sscanf2.[0]  :?> int
             satrec.satnum <- sscanf2.[1]  :?> int64 |> int
             satrec.inclo  <- sscanf2.[2]  :?> double
             satrec.nodeo  <- sscanf2.[3]  :?> double
@@ -122,7 +91,7 @@ let twoline2rv (longstr1 : array<char>)
         else
             let str =  (new String(longstr2))
             let sscanf2 = sscanf "%2d %5ld %9lf %9lf %8lf %9lf %9lf %12lf %6ld %lf %lf %lf" str // 5th from last changed from 10 to 12
-            cardnumb      <- sscanf2.[0]  :?> int
+            let cardnumb  =  sscanf2.[0]  :?> int
             satrec.satnum <- sscanf2.[1]  :?> int64 |> int
             satrec.inclo  <- sscanf2.[2]  :?> double
             satrec.nodeo  <- sscanf2.[3]  :?> double
@@ -138,7 +107,7 @@ let twoline2rv (longstr1 : array<char>)
     else // Simply run -1 day to +1 day or user input times
         if (longstr2.[52] = ' ') then
             let sscanf2 = sscanf "%2d %5ld %9lf %9lf %8lf %9lf %9lf %12lf %6ld " (new String(longstr2)) // 2nd from last changed from 10 to 12
-            cardnumb      <- sscanf2.[0]  :?> int
+            let cardnumb  =  sscanf2.[0]  :?> int
             satrec.satnum <- sscanf2.[1]  :?> int64 |> int
             satrec.inclo  <- sscanf2.[2]  :?> double
             satrec.nodeo  <- sscanf2.[3]  :?> double
@@ -149,7 +118,7 @@ let twoline2rv (longstr1 : array<char>)
             revnum        <- sscanf2.[8]  :?> int64
         else
             let sscanf2 = sscanf "%2d %5ld %9lf %9lf %8lf %9lf %9lf %12lf %6ld \n" (new String(longstr2)) // 2nd from last changed from 10 to 12
-            cardnumb      <- sscanf2.[0]  :?> int
+            let cardnumb  =  sscanf2.[0]  :?> int
             satrec.satnum <- sscanf2.[1]  :?> int64 |> int
             satrec.inclo  <- sscanf2.[2]  :?> double
             satrec.nodeo  <- sscanf2.[3]  :?> double
@@ -170,10 +139,10 @@ let twoline2rv (longstr1 : array<char>)
     satrec.nddot <- satrec.nddot / (xpdotp*1440.0*1440.0)
 
     // Find standard orbital elements:
-    satrec.inclo <- satrec.inclo  * deg2rad
-    satrec.nodeo <- satrec.nodeo  * deg2rad
-    satrec.argpo <- satrec.argpo  * deg2rad
-    satrec.mo    <- satrec.mo     * deg2rad
+    satrec.inclo <- satrec.inclo * deg2rad
+    satrec.nodeo <- satrec.nodeo * deg2rad
+    satrec.argpo <- satrec.argpo * deg2rad
+    satrec.mo    <- satrec.mo    * deg2rad
 
     satrec.alta <- satrec.a*(1.0 + satrec.ecco) - 1.0
     satrec.altp <- satrec.a*(1.0 - satrec.ecco) - 1.0
@@ -184,10 +153,11 @@ let twoline2rv (longstr1 : array<char>)
 
     // Temp fix for years from 1957-2056 
     // Correct fix will occur when year is 4-digit in tle:
-    if (satrec.epochyr < 57s) then
-        year <- int(satrec.epochyr) + 2000
-    else
-        year <- int(satrec.epochyr) + 1900
+    let year = 
+        if (satrec.epochyr < 57s) then
+            int(satrec.epochyr) + 2000
+        else
+            int(satrec.epochyr) + 1900
 
     let ymdhms = days2mdhms year satrec.epochdays
     satrec.jdsatepoch <- jday ymdhms 
@@ -243,7 +213,7 @@ let twoline2rv (longstr1 : array<char>)
             let scanLine = Console.ReadLine()
             let ssscanf = sscanf "%i %lf" scanLine
             let stopyear = ssscanf.[0] :?> int
-            let topdayofyr = ssscanf.[1] :?> int
+            let stopdayofyr = ssscanf.[1] :?> double
 
             let startymdhms = days2mdhms startyear startdayofyr
             let jdstart = jday startymdhms
