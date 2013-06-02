@@ -13,6 +13,7 @@ let twopi = 2.0 * PI
 let halfpi = 0.5 * PI
 let rad = 180.0 / PI
 let deg2rad = PI / 180.0
+let minperday = 1440.0
 
 // Magic numbers:
 

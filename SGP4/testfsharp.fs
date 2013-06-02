@@ -249,12 +249,12 @@ let runTests dataDir =
 
                     if (satrec.error = 0s) then
                         if ((typerun <> 'v') && (typerun <> 'c')) then
-                            jd <- satrec.jdsatepoch + tsince/1440.0
+                            jd <- satrec.jdsatepoch + tsince/minperday
                             let ijd = invjday jd  
                             outFileLines.Add(sprintf " %16.8f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f %5i%3i%3i %2i:%2i:%9.6f"
                                                        tsince ro.[0] ro.[1] ro.[2] vo.[0] vo.[1] vo.[2] ijd.year ijd.mon ijd.day ijd.hr ijd.minute ijd.sec )
                         else
-                            jd <- satrec.jdsatepoch + tsince/1440.0
+                            jd <- satrec.jdsatepoch + tsince/minperday
                             let ijd = invjday jd
 
                             eLines.Add(sprintf " %16.6f %16.8f %16.8f %16.8f %12.9f %12.9f %12.9f "

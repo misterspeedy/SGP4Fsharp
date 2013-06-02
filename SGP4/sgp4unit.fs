@@ -434,59 +434,16 @@ let dspace
 let sgp4 (whichconst : GravConstType)
          (satrec : ElSetRec)
          (tsince : double) =
-//         (r : array<double>) // TODO vector
-//         (v : array<double>) = // TODO vector
     try    
-        let mutable am              = Double.NaN
-        let mutable axnl            = Double.NaN       
-        let mutable am              = Double.NaN
-        let mutable aynl            = Double.NaN
-        let mutable betal           = Double.NaN
-        let mutable cosim           = Double.NaN
-        let mutable cnod            = Double.NaN
-        let mutable cos2u           = Double.NaN
-        let mutable coseo1          = Double.NaN
-        let mutable cosi            = Double.NaN
-        let mutable cosip           = Double.NaN
-        let mutable cosisq          = Double.NaN
-        let mutable cossu           = Double.NaN
-        let mutable cosu            = Double.NaN
-        let mutable delm            = Double.NaN
-        let mutable delomg          = Double.NaN
-        let mutable em              = Double.NaN
-        let mutable emsq            = Double.NaN
-        let mutable ecose           = Double.NaN
-        let mutable el2             = Double.NaN
-        let mutable eo1             = Double.NaN
-        let mutable ep              = Double.NaN
-        let mutable esine           = Double.NaN
-        let mutable argpm           = Double.NaN
-        let mutable argpp           = Double.NaN
-        let mutable argpdf          = Double.NaN
-        let mutable pl              = Double.NaN
-        let mutable rdotl           = Double.NaN
-        let mutable rl              = Double.NaN
-        let mutable rvdotl          = Double.NaN
-        let mutable sinim           = Double.NaN
-        let mutable sin2u           = Double.NaN
-        let mutable sineo1          = Double.NaN
-        let mutable sini            = Double.NaN
-        let mutable sinip           = Double.NaN
-        let mutable sinsu           = Double.NaN
-        let mutable sinu            = Double.NaN
-        let mutable snod            = Double.NaN
-        let mutable su              = Double.NaN
         let mutable t2              = Double.NaN
         let mutable t3              = Double.NaN
         let mutable t4              = Double.NaN
-        let mutable tem5            = Double.NaN
         let mutable temp            = Double.NaN
         let mutable temp1           = Double.NaN
         let mutable temp2           = Double.NaN
         let mutable tempa           = Double.NaN
         let mutable tempe           = Double.NaN
         let mutable templ           = Double.NaN
-        let mutable u               = Double.NaN
         let mutable ux              = Double.NaN
         let mutable uy              = Double.NaN
         let mutable uz              = Double.NaN
@@ -512,7 +469,6 @@ let sgp4 (whichconst : GravConstType)
         let mutable dndt            = Double.NaN
         let mutable delmtemp        = Double.NaN
 
-        let mutable ktr = Int32.MinValue
 
         // Set mathematical constants:
         let temp4 = 1.5e-12
@@ -527,9 +483,9 @@ let sgp4 (whichconst : GravConstType)
 
         // Update for secular gravity and atmospheric drag:
         xmdf    <- satrec.mo + satrec.mdot * satrec.t
-        argpdf  <- satrec.argpo + satrec.argpdot * satrec.t
+        let argpdf = satrec.argpo + satrec.argpdot * satrec.t
         nodedf  <- satrec.nodeo + satrec.nodedot * satrec.t
-        argpm   <- argpdf
+        let mutable argpm = argpdf
         mm      <- xmdf
         t2      <- satrec.t * satrec.t
         nodem   <- nodedf + satrec.nodecf * t2
@@ -538,9 +494,9 @@ let sgp4 (whichconst : GravConstType)
         templ   <- satrec.t2cof * t2
 
         if (satrec.isimp <> 1s) then
-            delomg   <- satrec.omgcof * satrec.t
+            let delomg = satrec.omgcof * satrec.t
             delmtemp <-  1.0 + satrec.eta * cos(xmdf)
-            delm     <- satrec.xmcof * (delmtemp * delmtemp * delmtemp - satrec.delmo)
+            let delm = satrec.xmcof * (delmtemp * delmtemp * delmtemp - satrec.delmo)
             temp     <- delomg + delm
             mm       <- xmdf + temp
             argpm    <- argpdf - temp
@@ -553,7 +509,7 @@ let sgp4 (whichconst : GravConstType)
             templ    <- templ + satrec.t3cof * t3 + t4 * (satrec.t4cof + satrec.t * satrec.t5cof)
 
         nm    <- satrec.no
-        em    <- satrec.ecco
+        let mutable em = satrec.ecco
         inclm <- satrec.inclo
         if (satrec.method' = 'd') then
             tc <- satrec.t
@@ -574,7 +530,7 @@ let sgp4 (whichconst : GravConstType)
             satrec.error <- 2s
             raise (Exception("Error 2 in sgp4"))
         else
-            am <- Math.Pow((gravConsts.xke / nm),x2o3) * tempa * tempa
+            let am = Math.Pow((gravConsts.xke / nm),x2o3) * tempa * tempa
             nm <- gravConsts.xke / Math.Pow(am, 1.5)
             em <- em - tempe
 
@@ -588,7 +544,7 @@ let sgp4 (whichconst : GravConstType)
                     em <- 1.0e-6
                 mm     <- mm + satrec.no * templ
                 xlm    <- mm + argpm + nodem
-                emsq   <- em * em
+                let emsq = em**2.0
                 temp   <- 1.0 - emsq
                    
                 nodem  <- fmod nodem twopi
@@ -597,17 +553,17 @@ let sgp4 (whichconst : GravConstType)
                 mm     <- fmod (xlm - argpm - nodem) twopi
 
                 // Compute extra mean quantities:
-                sinim <- sin(inclm)
-                cosim <- cos(inclm)
+                let sinim = sin(inclm)
+                let cosim = cos(inclm)
 
                 // Add lunar-solar periodics:
-                ep     <- em
+                let mutable ep = em
                 xincp  <- inclm
-                argpp  <- argpm
+                let mutable argpp = argpm
                 nodep  <- nodem
                 mp     <- mm
-                sinip  <- sinim
-                cosip  <- cosim
+                let mutable sinip = sinim
+                let mutable cosip = cosim
                 if (satrec.method' = 'd') then
                     dpper
                         satrec.e3   satrec.ee2  satrec.peo
@@ -640,12 +596,19 @@ let sgp4 (whichconst : GravConstType)
                     else
                         satrec.xlcof <- -0.25 * gravConsts.j3oj2 * sinip * (3.0 + 5.0 * cosip) / temp4
 
-                axnl <- ep * cos(argpp)
+                let axnl = ep * cos(argpp)
                 temp <- 1.0 / (am * (1.0 - ep * ep))
-                aynl <- ep* sin(argpp) + temp * satrec.aycof
+                let aynl = ep* sin(argpp) + temp * satrec.aycof
                 xl   <- mp + argpp + nodep + temp * satrec.xlcof * axnl
 
                 // Solve kepler's equation:
+                let mutable u      = Double.NaN
+                let mutable coseo1 = Double.NaN
+                let mutable eo1    = Double.NaN
+                let mutable tem5   = Double.NaN
+                let mutable ktr    = Int32.MinValue
+                let mutable sineo1 = Double.NaN
+
                 u    <- fmod (xl - nodep) twopi
                 eo1  <- u
                 tem5 <- 9999.9
@@ -661,31 +624,31 @@ let sgp4 (whichconst : GravConstType)
                     ktr <- ktr + 1
 
                 // Short period preliminary quantities:
-                ecose <- axnl*coseo1 + aynl*sineo1
-                esine <- axnl*sineo1 - aynl*coseo1
-                el2   <- axnl*axnl + aynl*aynl
-                pl    <- am*(1.0-el2)
+                let ecose = axnl*coseo1 + aynl*sineo1
+                let esine = axnl*sineo1 - aynl*coseo1
+                let el2 = axnl*axnl + aynl*aynl
+                let pl = am*(1.0-el2)
                 if (pl < 0.0) then
                     satrec.error <- 4s
                     raise (Exception("Error 4 in sgp4"))
                 else
-                    rl     <- am * (1.0 - ecose)
-                    rdotl  <- sqrt(am) * esine/rl
-                    rvdotl <- sqrt(pl) / rl
-                    betal  <- sqrt(1.0 - el2)
+                    let rl = am * (1.0 - ecose)
+                    let rdotl = sqrt(am) * esine/rl
+                    let rvdotl = sqrt(pl) / rl
+                    let betal = sqrt(1.0 - el2)
                     temp   <- esine / (1.0 + betal)
-                    sinu   <- am / rl * (sineo1 - aynl - axnl * temp)
-                    cosu   <- am / rl * (coseo1 - axnl + aynl * temp)
-                    su     <- atan2 sinu cosu
-                    sin2u  <- (cosu + cosu) * sinu
-                    cos2u  <- 1.0 - 2.0 * sinu * sinu
+                    let sinu = am / rl * (sineo1 - aynl - axnl * temp)
+                    let cosu = am / rl * (coseo1 - axnl + aynl * temp)
+                    let mutable su = atan2 sinu cosu
+                    let sin2u = (cosu + cosu) * sinu
+                    let cos2u = 1.0 - 2.0 * sinu * sinu
                     temp   <- 1.0 / pl
                     temp1  <- 0.5 * gravConsts.j2 * temp
                     temp2  <- temp1 * temp
 
                     // Update for short period periodics:
                     if (satrec.method' = 'd') then
-                        cosisq        <- cosip * cosip
+                        let cosisq = cosip * cosip
                         satrec.con41  <- 3.0*cosisq - 1.0
                         satrec.x1mth2 <- 1.0 - cosisq
                         satrec.x7thm1 <- 7.0*cosisq - 1.0
@@ -700,12 +663,12 @@ let sgp4 (whichconst : GravConstType)
                                  1.5 * satrec.con41) / gravConsts.xke
 
                     // Orientation vectors:
-                    sinsu <- sin(su)
-                    cossu <- cos(su)
-                    snod  <- sin(xnode)
-                    cnod  <- cos(xnode)
-                    sini  <- sin(xinc)
-                    cosi  <- cos(xinc)
+                    let sinsu = sin(su)
+                    let cossu = cos(su)
+                    let snod = sin(xnode)
+                    let cnod = cos(xnode)
+                    let sini = sin(xinc)
+                    let cosi = cos(xinc)
                     xmx   <- -snod * cosi
                     xmy   <- cnod * cosi
                     ux    <- xmx * sinsu + cnod * cossu
@@ -893,7 +856,7 @@ let dscom (epoch : double)
     plo    <- 0.0
     pgho   <- 0.0
     pho    <- 0.0
-    day    <- epoch + 18261.5 + tc / 1440.0
+    day    <- epoch + 18261.5 + tc / minperday
     xnodce <- fmod (4.5236020 - 9.2422029e-4 * day) twopi
     stem   <- sin(xnodce)
     ctem   <- cos(xnodce)

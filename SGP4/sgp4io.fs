@@ -17,7 +17,7 @@ let twoline2rv (longstr1 : array<char>)
                (stopmfe : double byref)
                (deltamin : double byref) 
                (satrec : ElSetRec) = 
-    let xpdotp  = 1440.0 / twopi
+    let xpdotp  = minperday / twopi
 
     let mutable revnum = 0L
 
@@ -135,8 +135,8 @@ let twoline2rv (longstr1 : array<char>)
 
     // Convert to sgp4 units:
     satrec.a     <- Math.Pow( satrec.no*gravConsts.tumin , (-2.0/3.0) )
-    satrec.ndot  <- satrec.ndot  / (xpdotp*1440.0)  //* ? * minperday
-    satrec.nddot <- satrec.nddot / (xpdotp*1440.0*1440.0)
+    satrec.ndot  <- satrec.ndot  / (xpdotp*minperday)  //* ? * minperday
+    satrec.nddot <- satrec.nddot / (xpdotp*minperday*minperday)
 
     // Find standard orbital elements:
     satrec.inclo <- satrec.inclo * deg2rad
@@ -195,8 +195,8 @@ let twoline2rv (longstr1 : array<char>)
                 }
             let jdstop = jday stopymdhms
 
-            startmfe <- (jdstart - satrec.jdsatepoch) * 1440.0
-            stopmfe  <- (jdstop - satrec.jdsatepoch) * 1440.0
+            startmfe <- (jdstart - satrec.jdsatepoch) * minperday
+            stopmfe  <- (jdstop - satrec.jdsatepoch) * minperday
 
             printf("input time step in minutes \n")
             let scanLine = Console.ReadLine()
@@ -220,8 +220,8 @@ let twoline2rv (longstr1 : array<char>)
             let stopymdhms = days2mdhms stopyear stopdayofyr
             let jdstop = jday stopymdhms
 
-            startmfe <- (jdstart - satrec.jdsatepoch) * 1440.0
-            stopmfe  <- (jdstop - satrec.jdsatepoch) * 1440.0
+            startmfe <- (jdstart - satrec.jdsatepoch) * minperday
+            stopmfe  <- (jdstop - satrec.jdsatepoch) * minperday
 
             printf("input time step in minutes \n")
             let scanLine = Console.ReadLine()
@@ -244,8 +244,8 @@ let twoline2rv (longstr1 : array<char>)
 
     // Perform complete catalog evaluation, -+ 1 day:
     if (typerun = 'c') then
-        startmfe <- -1440.0
-        stopmfe  <-  1440.0
+        startmfe <- -minperday
+        stopmfe  <-  minperday
         deltamin <-    10.0
 
     // Initialize the orbit at sgp4epoch:
