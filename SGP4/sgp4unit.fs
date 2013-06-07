@@ -74,88 +74,96 @@ let gstime (jdut1 : double) =
            (876600.0 * 3600.0 + 8640184.812866) * tut1 + 67310.54841) * deg2rad / 240.0) twopi 
     |> fixQuadrant
 
+type InitlResult =
+    {
+          no: double
+          method' : char
+          ainv : double
+          ao : double
+          con41 : double
+          con42 : double
+          cosio: double
+          cosio2 : double
+          eccsq : double
+          omeosq : double
+          posq: double
+          rp : double
+          rteosq: double
+          sinio  : double
+          gsto : double
+    }
+
 let initl (satn : int)
           (whichconst: GravConstType)
           (ecco : double)
           (epoch : double)
           (inclo : double)
-          (no: double byref)
-          (method' : char byref)
-          (ainv : double byref)
-          (ao : double byref)
-          (con41 : double byref)
-          (con42 : double byref)
-          (cosio: double byref)
-          (cosio2 : double byref)
-          (eccsq : double byref)
-          (omeosq : double byref)
-          (posq: double byref)
-          (rp : double byref)
-          (rteosq: double byref)
-          (sinio  : double byref)
-          (gsto : double byref)
+          (no : double)
           (opsmode: char) =
-
-    // Local variables:
-    let mutable ak            = Double.NaN
-    let mutable d1            = Double.NaN
-    let mutable del           = Double.NaN
-    let mutable adel          = Double.NaN
-    let mutable po            = Double.NaN
-    let mutable x2o3          = Double.NaN
-     
-    let mutable ds70          = Double.NaN
-    let mutable ts70          = Double.NaN
-    let mutable tfrac         = Double.NaN
-    let mutable c1            = Double.NaN
-    let mutable thgr70        = Double.NaN
-    let mutable fk5r          = Double.NaN
-    let mutable c1p2p         = Double.NaN
 
     // Earth constants:
     let gravConsts = getgravconst whichconst
-    x2o3 <- 2.0 / 3.0
+    let x2o3 = 2.0 / 3.0
 
     // Calculate auxillary epoch quantities:
-    eccsq  <- ecco * ecco
-    omeosq <- 1.0 - eccsq
-    rteosq <- sqrt(omeosq)
-    cosio  <- cos(inclo)
-    cosio2 <- cosio * cosio
+    let eccsq  = ecco * ecco
+    let omeosq = 1.0 - eccsq
+    let rteosq = sqrt(omeosq)
+    let cosio  = cos(inclo)
+    let cosio2 = cosio * cosio
 
     // Un-kozai the mean motion:
-    ak    <- Math.Pow(gravConsts.xke / no, x2o3)
-    d1    <- 0.75 * gravConsts.j2 * (3.0 * cosio2 - 1.0) / (rteosq * omeosq)
-    del   <- d1 / (ak * ak)
-    adel  <- ak * (1.0 - del * del - del *
+    let ak   = Math.Pow(gravConsts.xke / no, x2o3)
+    let d1   = 0.75 * gravConsts.j2 * (3.0 * cosio2 - 1.0) / (rteosq * omeosq)
+    let del  = d1 / (ak * ak)
+    let adel = ak * (1.0 - del * del - del *
                    (1.0 / 3.0 + 134.0 * del * del / 81.0))
-    del   <- d1/(adel * adel)
-    no    <- no / (1.0 + del)
+    let del = d1/(adel * adel)
+    let no = no / (1.0 + del)
           
-    ao    <- Math.Pow(gravConsts.xke / no, x2o3)
-    sinio <- sin(inclo)
-    po    <- ao * omeosq
-    con42 <- 1.0 - 5.0 * cosio2
-    con41 <- -con42-cosio2-cosio2
-    ainv  <- 1.0 / ao
-    posq  <- po * po
-    rp    <- ao * (1.0 - ecco)
-    method' <- 'n'
+    let ao    = Math.Pow(gravConsts.xke / no, x2o3)
+    let sinio = sin(inclo)
+    let po = ao * omeosq
+    let con42 = 1.0 - 5.0 * cosio2
+    let con41 = -con42-cosio2-cosio2
+    let ainv  = 1.0 / ao
+    let posq  = po * po
+    let rp    = ao * (1.0 - ecco)
+    let method' = 'n'
+     
+    let gsto = 
+        if (opsmode = 'a') then
+            // Count integer number of days from 0 jan 1970
+            let ts70 = epoch - 7305.0
+            let ds70 = floor(ts70 + 1.0e-8)
+            let tfrac = ts70 - ds70
+            // Find greenwich location at epoch
+            let c1     = 1.72027916940703639e-2
+            let thgr70 = 1.7321343856509374
+            let fk5r   = 5.07551419432269442e-15
+            let c1p2p  = c1 + twopi
+            fmod (thgr70 + c1*ds70 + c1p2p*tfrac + ts70*ts70*fk5r) twopi
+            |> fixQuadrant
+        else
+            gstime(epoch + 2433281.5)
 
-    if (opsmode = 'a') then
-        // Count integer number of days from 0 jan 1970
-        ts70 <- epoch - 7305.0
-        ds70 <- floor(ts70 + 1.0e-8)
-        tfrac <- ts70 - ds70
-        // Find greenwich location at epoch
-        c1     <- 1.72027916940703639e-2
-        thgr70 <- 1.7321343856509374
-        fk5r   <- 5.07551419432269442e-15
-        c1p2p  <- c1 + twopi
-        gsto   <- fmod (thgr70 + c1*ds70 + c1p2p*tfrac + ts70*ts70*fk5r) twopi
-                  |> fixQuadrant
-    else
-        gsto <- gstime(epoch + 2433281.5)
+    {
+          no = no
+          method' = method'
+          ainv = ainv
+          ao = ao
+          con41 = con41
+          con42 = con42
+          cosio = cosio
+          cosio2 = cosio2
+          eccsq = eccsq
+          omeosq = omeosq
+          posq = posq
+          rp = rp
+          rteosq = rteosq
+          sinio = sinio
+          gsto = gsto
+    }
 
 // Function declarations:
 
@@ -1274,17 +1282,6 @@ let sgp4init (whichconst : GravConstType)
              (xno : double)
              (xnodeo : double)
              (satrec : ElSetRec) =
-    let mutable ao            = Double.NaN    
-    let mutable ainv          = Double.NaN    
-    let mutable con42         = Double.NaN    
-    let mutable cosio         = Double.NaN    
-    let mutable sinio         = Double.NaN    
-    let mutable cosio2        = Double.NaN    
-    let mutable eccsq         = Double.NaN    
-    let mutable omeosq        = Double.NaN    
-    let mutable posq          = Double.NaN    
-    let mutable rp            = Double.NaN    
-    let mutable rteosq        = Double.NaN    
     let mutable cnodm         = Double.NaN    
     let mutable snodm         = Double.NaN    
     let mutable cosim         = Double.NaN    
@@ -1423,20 +1420,21 @@ let sgp4init (whichconst : GravConstType)
     satrec.init <- 'y'
     satrec.t <- 0.0
 
-    initl
-        (int(satn)) whichconst satrec.ecco epoch satrec.inclo &satrec.no &satrec.method'
-        &ainv &ao &satrec.con41 &con42 &cosio &cosio2 &eccsq &omeosq
-        &posq &rp &rteosq &sinio &satrec.gsto satrec.operationmode
+    let initlResult = initl (int(satn)) whichconst satrec.ecco epoch satrec.inclo satrec.no satrec.operationmode
 
+    satrec.no <- initlResult.no
+    satrec.method' <- initlResult.method'
+    satrec.gsto <- initlResult.gsto
+    satrec.con41 <- initlResult.con41
     satrec.error <- 0s
 
-    if ((omeosq >= 0.0 ) || ( satrec.no >= 0.0)) then
+    if ((initlResult.omeosq >= 0.0 ) || ( satrec.no >= 0.0)) then
         satrec.isimp <- 0s
-        if (rp < (220.0 / gravConsts.radiusearthkm + 1.0)) then
+        if (initlResult.rp < (220.0 / gravConsts.radiusearthkm + 1.0)) then
             satrec.isimp <- 1s
         sfour  <- ss
         qzms24 <- qzms2t
-        perige <- (rp - 1.0) * gravConsts.radiusearthkm
+        perige <- (initlResult.rp - 1.0) * gravConsts.radiusearthkm
 
         // For perigees below 156 km, s and qoms2t are altered:
         if (perige < 156.0) then
@@ -1447,63 +1445,63 @@ let sgp4init (whichconst : GravConstType)
             qzms24temp <-  (120.0 - sfour) / gravConsts.radiusearthkm
             qzms24 <- qzms24temp * qzms24temp * qzms24temp * qzms24temp
             sfour  <- sfour / gravConsts.radiusearthkm + 1.0
-        pinvsq <- 1.0 / posq
+        pinvsq <- 1.0 / initlResult.posq
 
-        tsi  <- 1.0 / (ao - sfour)
-        satrec.eta  <- ao * satrec.ecco * tsi
+        tsi  <- 1.0 / (initlResult.ao - sfour)
+        satrec.eta  <- initlResult.ao * satrec.ecco * tsi
         etasq <- satrec.eta * satrec.eta
         eeta  <- satrec.ecco * satrec.eta
         psisq <- Math.Abs(1.0 - etasq)
         coef  <- qzms24 * Math.Pow(tsi, 4.0)
         coef1 <- coef / Math.Pow(psisq, 3.5)
-        cc2   <- coef1 * satrec.no * (ao * (1.0 + 1.5 * etasq + eeta *
+        cc2   <- coef1 * satrec.no * (initlResult.ao * (1.0 + 1.5 * etasq + eeta *
                                                                       (4.0 + etasq)) + 0.375 * gravConsts.j2 * tsi / psisq * satrec.con41 *
                                                                       (8.0 + 3.0 * etasq * (8.0 + etasq)))
         satrec.cc1   <- satrec.bstar * cc2
         cc3   <- 0.0;
         if (satrec.ecco > 1.0e-4) then
-            cc3 <- -2.0 * coef * tsi * gravConsts.j3oj2 * satrec.no * sinio / satrec.ecco
-        satrec.x1mth2 <- 1.0 - cosio2
-        satrec.cc4    <- 2.0* satrec.no * coef1 * ao * omeosq *
+            cc3 <- -2.0 * coef * tsi * gravConsts.j3oj2 * satrec.no * initlResult.sinio / satrec.ecco
+        satrec.x1mth2 <- 1.0 - initlResult.cosio2
+        satrec.cc4    <- 2.0* satrec.no * coef1 * initlResult.ao * initlResult.omeosq *
                             (
                                 satrec.eta * (2.0 + 0.5 * etasq) + satrec.ecco *
-                                    (0.5 + 2.0 * etasq) - gravConsts.j2 * tsi / (ao * psisq) *
+                                    (0.5 + 2.0 * etasq) - gravConsts.j2 * tsi / (initlResult.ao * psisq) *
                                     (-3.0 * satrec.con41 * (1.0 - 2.0 * eeta + etasq *
                                         (1.5 - 0.5 * eeta)) + 0.75 * satrec.x1mth2 *
                                         (2.0 * etasq - eeta * (1.0 + etasq)) * cos(2.0 * satrec.argpo))
                             )
-        satrec.cc5 <- 2.0 * coef1 * ao * omeosq * (1.0 + 2.75 *
+        satrec.cc5 <- 2.0 * coef1 * initlResult.ao * initlResult.omeosq * (1.0 + 2.75 *
                     (etasq + eeta) + eeta * etasq)
-        cosio4 <- cosio2 * cosio2
+        cosio4 <- initlResult.cosio2 ** 2.
         temp1  <- 1.5 * gravConsts.j2 * pinvsq * satrec.no
         temp2  <- 0.5 * temp1 * gravConsts.j2 * pinvsq
         temp3  <- -0.46875 * gravConsts.j4 * pinvsq * pinvsq * satrec.no
-        satrec.mdot     <- satrec.no + 0.5 * temp1 * rteosq * satrec.con41 + 0.0625 *
-                        temp2 * rteosq * (13.0 - 78.0 * cosio2 + 137.0 * cosio4)
-        satrec.argpdot  <- -0.5 * temp1 * con42 + 0.0625 * temp2 *
-                            (7.0 - 114.0 * cosio2 + 395.0 * cosio4) +
-                            temp3 * (3.0 - 36.0 * cosio2 + 49.0 * cosio4)
-        xhdot1            <- -temp1 * cosio
-        satrec.nodedot <- xhdot1 + (0.5 * temp2 * (4.0 - 19.0 * cosio2) +
-                            2.0 * temp3 * (3.0 - 7.0 * cosio2)) * cosio
+        satrec.mdot     <- satrec.no + 0.5 * temp1 * initlResult.rteosq * satrec.con41 + 0.0625 *
+                        temp2 * initlResult.rteosq * (13.0 - 78.0 * initlResult.cosio2 + 137.0 * cosio4)
+        satrec.argpdot  <- -0.5 * temp1 * initlResult.con42 + 0.0625 * temp2 *
+                            (7.0 - 114.0 * initlResult.cosio2 + 395.0 * cosio4) +
+                            temp3 * (3.0 - 36.0 * initlResult.cosio2 + 49.0 * cosio4)
+        xhdot1            <- -temp1 * initlResult.cosio
+        satrec.nodedot <- xhdot1 + (0.5 * temp2 * (4.0 - 19.0 * initlResult.cosio2) +
+                            2.0 * temp3 * (3.0 - 7.0 * initlResult.cosio2)) * initlResult.cosio
         xpidot            <-  satrec.argpdot+ satrec.nodedot
         satrec.omgcof   <- satrec.bstar * cc3 * cos(satrec.argpo)
         satrec.xmcof    <- 0.0
         if (satrec.ecco > 1.0e-4) then
             satrec.xmcof <- -x2o3 * coef * satrec.bstar / eeta
-        satrec.nodecf <- 3.5 * omeosq * xhdot1 * satrec.cc1
+        satrec.nodecf <- 3.5 * initlResult.omeosq * xhdot1 * satrec.cc1
         satrec.t2cof   <- 1.5 * satrec.cc1
         // sgp4fix for divide by zero with xinco <- 180 deg
-        if (Math.Abs(cosio+1.0) > 1.5e-12) then
-            satrec.xlcof <- -0.25 * gravConsts.j3oj2 * sinio * (3.0 + 5.0 * cosio) / (1.0 + cosio)
+        if (Math.Abs(initlResult.cosio+1.0) > 1.5e-12) then
+            satrec.xlcof <- -0.25 * gravConsts.j3oj2 * initlResult.sinio * (3.0 + 5.0 * initlResult.cosio) / (1.0 + initlResult.cosio)
         else
-            satrec.xlcof <- -0.25 * gravConsts.j3oj2 * sinio * (3.0 + 5.0 * cosio) / temp4
-        satrec.aycof   <- -0.5 * gravConsts.j3oj2 * sinio
+            satrec.xlcof <- -0.25 * gravConsts.j3oj2 * initlResult.sinio * (3.0 + 5.0 * initlResult.cosio) / temp4
+        satrec.aycof   <- -0.5 * gravConsts.j3oj2 * initlResult.sinio
         // sgp4fix use multiply for speed instead of pow
         delmotemp <- 1.0 + satrec.eta * cos(satrec.mo)
         satrec.delmo   <- delmotemp * delmotemp * delmotemp
         satrec.sinmao  <- sin(satrec.mo)
-        satrec.x7thm1  <- 7.0 * cosio2 - 1.0;
+        satrec.x7thm1  <- 7.0 * initlResult.cosio2 - 1.0;
 
         // Deep space initialization:
         if ((2.*PI / satrec.no) >= 225.0) then
@@ -1547,7 +1545,7 @@ let sgp4init (whichconst : GravConstType)
                    ss5 sz1 sz3 sz11 sz13 sz21 sz23 sz31 sz33 satrec.t tc 
                    satrec.gsto satrec.mo satrec.mdot satrec.no satrec.nodeo 
                    satrec.nodedot xpidot z1 z3 z11 z13 z21 z23 z31 z33 
-                   satrec.ecco eccsq &em &argpm &inclm &mm &nm &nodem 
+                   satrec.ecco initlResult.eccsq &em &argpm &inclm &mm &nm &nodem 
                    &(satrec.irez) &(satrec.atime) 
                    &(satrec.d2201) &(satrec.d2211) &(satrec.d3210) &(satrec.d3222) 
                    &(satrec.d4410) &(satrec.d4422) &(satrec.d5220) &(satrec.d5232) 
@@ -1559,10 +1557,10 @@ let sgp4init (whichconst : GravConstType)
     // Set variables if not deep space:
     if (satrec.isimp <> 1s) then
         cc1sq          <- satrec.cc1 * satrec.cc1
-        satrec.d2    <- 4.0 * ao * tsi * cc1sq
+        satrec.d2    <- 4.0 * initlResult.ao * tsi * cc1sq
         temp           <- satrec.d2 * tsi * satrec.cc1 / 3.0
-        satrec.d3    <- (17.0 * ao + sfour) * temp
-        satrec.d4    <- 0.5 * temp * ao * tsi * (221.0 * ao + 31.0 * sfour) *
+        satrec.d3    <- (17.0 * initlResult.ao + sfour) * temp
+        satrec.d4    <- 0.5 * temp * initlResult.ao * tsi * (221.0 * initlResult.ao + 31.0 * sfour) *
                         satrec.cc1
         satrec.t3cof <- satrec.d2 + 2.0 * cc1sq
         satrec.t4cof <- 0.25 * (3.0 * satrec.d3 + satrec.cc1 *
