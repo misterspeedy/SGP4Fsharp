@@ -216,12 +216,12 @@ let dpper (e3      : double)
 
     // Calculate time-varying periodics:
     // Be sure that the initial call has time set to zero:
-    let mutable zm = if (init = 'y') then
-                        zmos
-                     else
-                        zmos + zns * t
-                  
-    let zf    = zm + 2.0 * zes * sin(zm)
+    let zms = if (init = 'y') then
+                 zmos
+              else
+                 zmos + zns * t
+           
+    let zf    = zms + 2.0 * zes * sin(zms)
     let sinzf = sin(zf)
     let f2    =  0.5 * sinzf * sinzf - 0.25
     let f3    = -0.5 * sinzf * cos(zf)
@@ -231,12 +231,12 @@ let dpper (e3      : double)
     let sghs  = sgh2 * f2 + sgh3 * f3 + sgh4 * sinzf
     let shs   = sh2 * f2 + sh3 * f3
 
-    zm <- if (init = 'y') then
-              zmol
-          else
-              zmol + znl * t
-  
-    let zf    = zm + 2.0 * zel * sin(zm)
+    let zml = if (init = 'y') then
+                   zmol
+               else
+                   zmol + znl * t
+       
+    let zf    = zml + 2.0 * zel * sin(zml)
     let sinzf = sin(zf)
     let f2    =  0.5 * sinzf * sinzf - 0.25
     let f3    = -0.5 * sinzf * cos(zf)
@@ -245,18 +245,13 @@ let dpper (e3      : double)
     let sll   = xl2 * f2 + xl3 * f3 + xl4 * sinzf
     let sghl  = xgh2 * f2 + xgh3 * f3 + xgh4 * sinzf
     let shll  = xh2 * f2 + xh3 * f3
-    let mutable pe    = ses + sel
-    let mutable pinc  = sis + sil
-    let mutable pl    = sls + sll
-    let mutable pgh   = sghs + sghl
-    let mutable ph    = shs + shll
 
     if (init = 'n') then
-        pe    <- pe - peo
-        pinc  <- pinc - pinco
-        pl    <- pl - plo
-        pgh   <- pgh - pgho
-        ph    <- ph - pho
+        let pe   = ses + sel - peo
+        let pinc = sis + sil - pinco
+        let pl   = sls + sll - plo
+        let pgh  = sghs + sghl - pgho
+        let ph   = shs + shll - pho
         inclp <- inclp + pinc
         ep    <- ep + pe
         let sinip = sin(inclp)
@@ -264,10 +259,10 @@ let dpper (e3      : double)
 
         if (inclp >= 0.2) then
             // Apply periodics directly:
-            ph     <- ph / sinip
-            pgh    <- pgh - cosip * ph
-            argpp  <- argpp + pgh
-            nodep  <- nodep + ph
+            let ph' = ph / sinip
+            let pgh' = pgh - cosip * ph'
+            argpp  <- argpp + pgh'
+            nodep  <- nodep + ph'
             mp     <- mp + pl
         else
            // Apply periodics with Lyddane modification:
@@ -284,9 +279,8 @@ let dpper (e3      : double)
            // nodep used without a trigonometric function ahead.
            if ((nodep < 0.0) && (opsmode = 'a')) then
                nodep <- nodep + twopi
-           let mutable xls = mp + argpp + cosip * nodep
            let dls    = pl + pgh - pinc * nodep * sinip
-           xls <- xls + dls
+           let xls = mp + argpp + cosip * nodep + dls
            let xnoh = nodep
            nodep <- atan2 alfdp betdp
            // sgp4fix for afspc written intrinsic functions
