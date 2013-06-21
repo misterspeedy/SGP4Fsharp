@@ -48,10 +48,10 @@
     <Compile Include="sgp4constants.fs" />
     <Compile Include="sgp4math.fs" />
     <Compile Include="sgp4common.fs" />
-    <Compile Include="sgp4unit.fs" />
     <Compile Include="sgp4ext.fs" />
     <None Include="App.config" />
     <Compile Include="sscanf.fs" />
+    <Compile Include="sgp4unit.fs" />
     <Compile Include="sgp4io.fs" />
     <Compile Include="testfsharp.fs" />
     <Compile Include="Program.fs" />

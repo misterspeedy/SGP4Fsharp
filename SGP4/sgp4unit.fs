@@ -167,6 +167,15 @@ let initl (satn : int)
 
 // Function declarations:
 
+type DpperResult =
+    {
+        ep      : double
+        inclp   : double
+        nodep   : double
+        argpp   : double
+        mp      : double 
+    }
+
 let dpper (e3      : double)
           (ee2     : double)
           (peo     : double)
@@ -200,12 +209,12 @@ let dpper (e3      : double)
           (zmol    : double)
           (zmos    : double)
           (inclo   : double)
-          (init     : char)
-          (ep      : double byref)
-          (inclp   : double byref)
-          (nodep   : double byref)
-          (argpp   : double byref)
-          (mp      : double byref) 
+          (init    : char)
+          (ep      : double)
+          (inclp   : double)
+          (nodep   : double)
+          (argpp   : double)
+          (mp      : double) 
           (opsmode : char) =
 
     // Constants:
@@ -252,48 +261,71 @@ let dpper (e3      : double)
         let pl   = sls + sll - plo
         let pgh  = sghs + sghl - pgho
         let ph   = shs + shll - pho
-        inclp <- inclp + pinc
-        ep    <- ep + pe
-        let sinip = sin(inclp)
-        let cosip = cos(inclp)
+        let inclp' = inclp + pinc
+        let ep'    = ep + pe
+        let sinip = sin(inclp')
+        let cosip = cos(inclp')
 
-        if (inclp >= 0.2) then
+        if (inclp' >= 0.2) then
             // Apply periodics directly:
             let ph' = ph / sinip
             let pgh' = pgh - cosip * ph'
-            argpp  <- argpp + pgh'
-            nodep  <- nodep + ph'
-            mp     <- mp + pl
+            let argpp' = argpp + pgh'
+            let nodep' = nodep + ph'
+            let mp' = mp + pl
+            {
+                ep = ep'
+                inclp = inclp'
+                nodep = nodep'
+                argpp = argpp'
+                mp = mp'
+            }
         else
-           // Apply periodics with Lyddane modification:
-           let sinop  = sin(nodep)
-           let cosop  = cos(nodep)
-           let mutable alfdp  = sinip * sinop
-           let mutable betdp  = sinip * cosop
-           let dalf   =  ph * cosop + pinc * cosip * sinop
-           let dbet   = -ph * sinop + pinc * cosip * cosop
-           alfdp <- alfdp + dalf
-           betdp <- betdp + dbet
-           nodep <- fmod nodep twopi
-           // sgp4fix for afspc written intrinsic functions
-           // nodep used without a trigonometric function ahead.
-           if ((nodep < 0.0) && (opsmode = 'a')) then
-               nodep <- nodep + twopi
-           let dls    = pl + pgh - pinc * nodep * sinip
-           let xls = mp + argpp + cosip * nodep + dls
-           let xnoh = nodep
-           nodep <- atan2 alfdp betdp
-           // sgp4fix for afspc written intrinsic functions
-           // nodep used without a trigonometric function ahead.
-           if ((nodep < 0.0) && (opsmode = 'a')) then
-               nodep <- nodep + twopi
-           if (Math.Abs(xnoh - nodep) > PI) then
-             if (nodep < xnoh) then
-                 nodep <- nodep + twopi
-             else
-                 nodep <- nodep - twopi
-           mp <- mp + pl
-           argpp <- xls - mp - cosip * nodep
+            // Apply periodics with Lyddane modification:
+            let sinop  = sin(nodep)
+            let cosop  = cos(nodep)
+            let mutable alfdp  = sinip * sinop
+            let mutable betdp  = sinip * cosop
+            let dalf   =  ph * cosop + pinc * cosip * sinop
+            let dbet   = -ph * sinop + pinc * cosip * cosop
+            alfdp <- alfdp + dalf
+            betdp <- betdp + dbet
+            let mutable nodep' = fmod nodep twopi
+            // sgp4fix for afspc written intrinsic functions
+            // nodep used without a trigonometric function ahead.
+            if ((nodep' < 0.0) && (opsmode = 'a')) then
+                nodep' <- nodep' + twopi
+            let dls    = pl + pgh - pinc * nodep' * sinip
+            let xls = mp + argpp + cosip * nodep' + dls
+            let xnoh = nodep'
+            nodep' <- atan2 alfdp betdp
+            // sgp4fix for afspc written intrinsic functions
+            // nodep used without a trigonometric function ahead.
+            if ((nodep' < 0.0) && (opsmode = 'a')) then
+                nodep' <- nodep' + twopi
+            if (Math.Abs(xnoh - nodep') > PI) then
+              if (nodep' < xnoh) then
+                  nodep' <- nodep' + twopi
+              else
+                  nodep' <- nodep' - twopi
+            let mp' = mp + pl
+            let argpp' = xls - mp' - cosip * nodep'
+  
+            {
+                ep = ep'
+                inclp = inclp'
+                nodep = nodep'
+                argpp = argpp'
+                mp = mp'
+            }
+    else
+            {
+                ep = ep
+                inclp = inclp
+                nodep = nodep
+                argpp = argpp
+                mp = mp
+            }
 
 let dspace
            (irez : int)
@@ -567,19 +599,25 @@ let sgp4 (whichconst : GravConstType)
                 let mutable sinip = sinim
                 let mutable cosip = cosim
                 if (satrec.method' = 'd') then
-                    dpper
-                        satrec.e3   satrec.ee2  satrec.peo
-                        satrec.pgho satrec.pho  satrec.pinco
-                        satrec.plo  satrec.se2  satrec.se3
-                        satrec.sgh2 satrec.sgh3 satrec.sgh4
-                        satrec.sh2  satrec.sh3  satrec.si2
-                        satrec.si3  satrec.sl2  satrec.sl3
-                        satrec.sl4  satrec.t    satrec.xgh2
-                        satrec.xgh3 satrec.xgh4 satrec.xh2
-                        satrec.xh3  satrec.xi2  satrec.xi3
-                        satrec.xl2  satrec.xl3  satrec.xl4
-                        satrec.zmol satrec.zmos satrec.inclo
-                        'n' &ep &xincp &nodep &argpp &mp satrec.operationmode
+                    let dpperResult = 
+                        dpper
+                            satrec.e3   satrec.ee2  satrec.peo
+                            satrec.pgho satrec.pho  satrec.pinco
+                            satrec.plo  satrec.se2  satrec.se3
+                            satrec.sgh2 satrec.sgh3 satrec.sgh4
+                            satrec.sh2  satrec.sh3  satrec.si2
+                            satrec.si3  satrec.sl2  satrec.sl3
+                            satrec.sl4  satrec.t    satrec.xgh2
+                            satrec.xgh3 satrec.xgh4 satrec.xh2
+                            satrec.xh3  satrec.xi2  satrec.xi3
+                            satrec.xl2  satrec.xl3  satrec.xl4
+                            satrec.zmol satrec.zmos satrec.inclo
+                            'n' ep xincp nodep argpp mp satrec.operationmode
+                    ep <- dpperResult.ep
+                    xincp <- dpperResult.inclp
+                    nodep <- dpperResult.nodep
+                    argpp <- dpperResult.argpp
+                    mp <- dpperResult.mp
                     if (xincp < 0.0) then
                         xincp  <- -xincp
                         nodep  <- nodep + PI
@@ -1519,16 +1557,22 @@ let sgp4init (whichconst : GravConstType)
                   &satrec.xl3 &satrec.xl4 &nm &z1 &z2 &z3 &z11
                   &z12 &z13 &z21 &z22 &z23 &z31 &z32 &z33
                   &satrec.zmol &satrec.zmos
-            dpper satrec.e3 satrec.ee2 satrec.peo satrec.pgho
-                  satrec.pho satrec.pinco satrec.plo satrec.se2
-                  satrec.se3 satrec.sgh2 satrec.sgh3 satrec.sgh4
-                  satrec.sh2 satrec.sh3 satrec.si2  satrec.si3
-                  satrec.sl2 satrec.sl3 satrec.sl4  satrec.t
-                  satrec.xgh2 satrec.xgh3 satrec.xgh4 satrec.xh2
-                  satrec.xh3 satrec.xi2 satrec.xi3  satrec.xl2
-                  satrec.xl3 satrec.xl4 satrec.zmol satrec.zmos inclm satrec.init
-                  &(satrec.ecco) &(satrec.inclo) &(satrec.nodeo) &(satrec.argpo) &(satrec.mo)
-                  satrec.operationmode
+            let dpperResult = dpper satrec.e3 satrec.ee2 satrec.peo satrec.pgho
+                                  satrec.pho satrec.pinco satrec.plo satrec.se2
+                                  satrec.se3 satrec.sgh2 satrec.sgh3 satrec.sgh4
+                                  satrec.sh2 satrec.sh3 satrec.si2  satrec.si3
+                                  satrec.sl2 satrec.sl3 satrec.sl4  satrec.t
+                                  satrec.xgh2 satrec.xgh3 satrec.xgh4 satrec.xh2
+                                  satrec.xh3 satrec.xi2 satrec.xi3  satrec.xl2
+                                  satrec.xl3 satrec.xl4 satrec.zmol satrec.zmos inclm satrec.init
+                                  satrec.ecco satrec.inclo satrec.nodeo satrec.argpo satrec.mo
+                                  satrec.operationmode
+
+            satrec.ecco <- dpperResult.ep
+            satrec.inclo <- dpperResult.inclp
+            satrec.nodeo <- dpperResult.nodep
+            satrec.argpo <- dpperResult.argpp
+            satrec.mo <- dpperResult.mp
 
             argpm  <- 0.0
             nodem  <- 0.0
