@@ -327,6 +327,20 @@ let dpper (e3      : double)
                 mp = mp
             }
 
+type DspaceResult = 
+    {
+        atime : double
+        em : double
+        argpm : double
+        inclm : double
+        xli : double
+        mm : double
+        xni : double
+        nodem : double
+        dndt : double
+        nm : double
+     }
+
 let dspace
            (irez : int)
            (d2201 : double)
@@ -355,16 +369,17 @@ let dspace
            (xfact : double)
            (xlamo : double)
            (no : double)
-           (atime : double byref)
-           (em : double byref)
-           (argpm : double byref)
-           (inclm : double byref)
-           (xli : double byref)
-           (mm : double byref)
-           (xni : double byref)
-           (nodem : double byref)
-           (dndt : double byref)
-           (nm : double byref) =
+           (atime : double)
+           (em : double)
+           (argpm : double)
+           (inclm : double)
+           (xli : double)
+           (mm : double)
+           (xni : double)
+           (nodem : double)
+//           (dndt : double byref)
+           (nm : double)
+            =
 
     let mutable delt  = Double.NaN
     let mutable xndt  = Double.NaN
@@ -389,21 +404,25 @@ let dspace
     let step2 = 259200.0
 
     // Calculate deep space resonance effects:
-    dndt   <- 0.0
+    let mutable dndt = 0.0
     let theta = fmod (gsto + tc * rptim) twopi
-    em     <- em + dedt * t
+    let em' = em + dedt * t
 
-    inclm  <- inclm + didt * t
-    argpm  <- argpm + domdt * t
-    nodem  <- nodem + dnodt * t
-    mm     <- mm + dmdt * t
+    let inclm' = inclm + didt * t
+    let argpm' = argpm + domdt * t
+    let nodem' = nodem + dnodt * t
+    let mutable mm'    = mm + dmdt * t
+    let mutable atime' = atime
+    let mutable xli' = xli
+    let mutable xni' = xni
+    let mutable nm' = nm
 
     let mutable ft = 0.0;
     if (irez <> 0) then
-        if ((atime = 0.0) || (t * atime <= 0.0) || (Math.Abs(t) < Math.Abs(atime)) ) then
-            atime  <- 0.0
-            xni    <- no
-            xli    <- xlamo
+        if ((atime' = 0.0) || (t * atime' <= 0.0) || (Math.Abs(t) < Math.Abs(atime')) ) then
+            atime'  <- 0.0
+            xni'    <- no
+            xli'    <- xlamo
         if (t > 0.0) then
             delt <- stepp
         else
@@ -415,55 +434,80 @@ let dspace
             // Dot terms calculated.
             // Near - synchronous resonance terms:
             if (irez <> 2) then
-                xndt  <- del1 * sin(xli - fasx2) + del2 * sin(2.0 * (xli - fasx4)) +
-                         del3 * sin(3.0 * (xli - fasx6))
-                xldot <- xni + xfact;
-                xnddt <- del1 * cos(xli - fasx2) +
-                         2.0 * del2 * cos(2.0 * (xli - fasx4)) +
-                         3.0 * del3 * cos(3.0 * (xli - fasx6))
+                xndt  <- del1 * sin(xli' - fasx2) + del2 * sin(2.0 * (xli' - fasx4)) +
+                         del3 * sin(3.0 * (xli' - fasx6))
+                xldot <- xni' + xfact;
+                xnddt <- del1 * cos(xli' - fasx2) +
+                         2.0 * del2 * cos(2.0 * (xli' - fasx4)) +
+                         3.0 * del3 * cos(3.0 * (xli' - fasx6))
                 xnddt <- xnddt * xldot
             else
                 // Near - half-day resonance terms:
-                xomi  <- argpo + argpdot * atime
+                xomi  <- argpo + argpdot * atime'
                 x2omi <- xomi + xomi
-                x2li  <- xli + xli
-                xndt  <- d2201 * sin(x2omi + xli - g22) + d2211 * sin(xli - g22) +
-                         d3210 * sin(xomi + xli - g32)  + d3222 * sin(-xomi + xli - g32)+
+                x2li  <- xli' + xli'
+                xndt  <- d2201 * sin(x2omi + xli' - g22) + d2211 * sin(xli' - g22) +
+                         d3210 * sin(xomi + xli' - g32)  + d3222 * sin(-xomi + xli' - g32)+
                          d4410 * sin(x2omi + x2li - g44)+ d4422 * sin(x2li - g44) +
-                         d5220 * sin(xomi + xli - g52)  + d5232 * sin(-xomi + xli - g52)+
+                         d5220 * sin(xomi + xli' - g52)  + d5232 * sin(-xomi + xli' - g52)+
                          d5421 * sin(xomi + x2li - g54) + d5433 * sin(-xomi + x2li - g54)
-                xldot <- xni + xfact
-                xnddt <- d2201 * cos(x2omi + xli - g22) + d2211 * cos(xli - g22) +
-                         d3210 * cos(xomi + xli - g32) + d3222 * cos(-xomi + xli - g32) +
-                         d5220 * cos(xomi + xli - g52) + d5232 * cos(-xomi + xli - g52) +
+                xldot <- xni' + xfact
+                xnddt <- d2201 * cos(x2omi + xli' - g22) + d2211 * cos(xli' - g22) +
+                         d3210 * cos(xomi + xli' - g32) + d3222 * cos(-xomi + xli' - g32) +
+                         d5220 * cos(xomi + xli' - g52) + d5232 * cos(-xomi + xli' - g52) +
                          2.0 * (d4410 * cos(x2omi + x2li - g44) +
                                 d4422 * cos(x2li - g44) + d5421 * cos(xomi + x2li - g54) +
                                 d5433 * cos(-xomi + x2li - g54))
                 xnddt <- xnddt * xldot
 
             // Integrator:
-            if (Math.Abs(t - atime) >= stepp) then
+            if (Math.Abs(t - atime') >= stepp) then
                 iret  <- 0
                 iretn <- 381
             else // exit here
-                ft    <- t - atime
+                ft    <- t - atime'
                 iretn <- 0
 
             if (iretn = 381) then
-                xli   <- xli + xldot * delt + xndt * step2
-                xni   <- xni + xndt * delt + xnddt * step2
-                atime <- atime + delt
+                xli'   <- xli' + xldot * delt + xndt * step2
+                xni'   <- xni' + xndt * delt + xnddt * step2
+                atime' <- atime' + delt
         // while iretn = 381
 
-        nm <- xni + xndt * ft + xnddt * ft * ft * 0.5
-        xl <- xli + xldot * ft + xndt * ft * ft * 0.5
+        nm' <- xni' + xndt * ft + xnddt * ft * ft * 0.5
+        xl <- xli' + xldot * ft + xndt * ft * ft * 0.5
         if (irez <> 1) then
-            mm   <- xl - 2.0 * nodem + 2.0 * theta
-            dndt <- nm - no
+            mm'   <- xl - 2.0 * nodem' + 2.0 * theta
+            dndt <- nm' - no
         else
-            mm   <- xl - nodem - argpm + theta
-            dndt <- nm - no
-        nm <- no + dndt
+            mm'   <- xl - nodem' - argpm' + theta
+            dndt <- nm' - no
+        nm' <- no + dndt
+        {
+            atime = atime'
+            em = em'
+            argpm = argpm'
+            inclm = inclm'
+            xli = xli'
+            mm = mm'
+            xni = xni'
+            nodem = nodem'
+            dndt = dndt
+            nm = nm'
+        }
+    else
+        {
+            atime = atime'
+            em = em'
+            argpm = argpm'
+            inclm = inclm'
+            xli = xli'
+            mm = mm'
+            xni = xni'
+            nodem = nodem'
+            dndt = dndt
+            nm = nm'
+        }
 
 let sgp4 (whichconst : GravConstType)
          (satrec : ElSetRec)
@@ -547,19 +591,31 @@ let sgp4 (whichconst : GravConstType)
         inclm <- satrec.inclo
         if (satrec.method' = 'd') then
             tc <- satrec.t
-            dspace
-                (int(satrec.irez))
-                satrec.d2201 satrec.d2211 satrec.d3210
-                satrec.d3222 satrec.d4410 satrec.d4422
-                satrec.d5220 satrec.d5232 satrec.d5421
-                satrec.d5433 satrec.dedt  satrec.del1
-                satrec.del2  satrec.del3  satrec.didt
-                satrec.dmdt  satrec.dnodt satrec.domdt
-                satrec.argpo satrec.argpdot satrec.t tc
-                satrec.gsto satrec.xfact satrec.xlamo
-                satrec.no &satrec.atime
-                &em &argpm &inclm &satrec.xli &mm &satrec.xni
-                &nodem &dndt &nm
+            let dspaceResult = dspace 
+                                  (int(satrec.irez))
+                                  satrec.d2201 satrec.d2211 satrec.d3210
+                                  satrec.d3222 satrec.d4410 satrec.d4422
+                                  satrec.d5220 satrec.d5232 satrec.d5421
+                                  satrec.d5433 satrec.dedt  satrec.del1
+                                  satrec.del2  satrec.del3  satrec.didt
+                                  satrec.dmdt  satrec.dnodt satrec.domdt
+                                  satrec.argpo satrec.argpdot satrec.t tc
+                                  satrec.gsto satrec.xfact satrec.xlamo
+                                  satrec.no satrec.atime
+                                  em argpm inclm satrec.xli mm satrec.xni
+                                  nodem nm 
+
+            satrec.atime <- dspaceResult.atime
+            em <- dspaceResult.em
+            argpm <- dspaceResult.argpm
+            inclm <- dspaceResult.inclm
+            satrec.xli <- dspaceResult.xli
+            mm <- dspaceResult.mm
+            satrec.xni <- dspaceResult.xni
+            nodem <- dspaceResult.nodem
+            dndt <- dspaceResult.dndt
+            nm <- dspaceResult.nm
+
         if (nm <= 0.0) then
             satrec.error <- 2s
             raise (Exception("Error 2 in sgp4"))
